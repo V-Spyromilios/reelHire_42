@@ -1,0 +1,14 @@
+.next
+node_modules
+.npm-cache
+dist
+out
+.env*.local
+.env
+backend/.env
+backend/.venv
+backend/**/__pycache__
+backend/.pytest_cache
+tsconfig.tsbuildinfo
+infra/aws/.state.env
+infra/aws/tmp

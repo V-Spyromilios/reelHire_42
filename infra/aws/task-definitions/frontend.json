@@ -1,0 +1,35 @@
+{
+  "family": "reelhire-frontend",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "runtimePlatform": {
+    "cpuArchitecture": "X86_64",
+    "operatingSystemFamily": "LINUX"
+  },
+  "executionRoleArn": "REPLACED_BY_DEPLOY_SCRIPT",
+  "taskRoleArn": "REPLACED_BY_DEPLOY_SCRIPT",
+  "containerDefinitions": [
+    {
+      "name": "frontend",
+      "image": "REPLACED_BY_DEPLOY_SCRIPT",
+      "essential": true,
+      "portMappings": [{ "containerPort": 3000, "protocol": "tcp" }],
+      "environment": [
+        { "name": "NODE_ENV", "value": "production" },
+        { "name": "NEXT_PUBLIC_DATA_SOURCE", "value": "api" },
+        { "name": "NEXT_PUBLIC_API_BASE_URL", "value": "" },
+        { "name": "API_INTERNAL_BASE_URL", "value": "REPLACED_BY_DEPLOY_SCRIPT" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/reelhire/frontend",
+          "awslogs-region": "REPLACED_BY_DEPLOY_SCRIPT",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}

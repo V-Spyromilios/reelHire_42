@@ -1,0 +1,36 @@
+{
+  "family": "reelhire-backend",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "runtimePlatform": {
+    "cpuArchitecture": "X86_64",
+    "operatingSystemFamily": "LINUX"
+  },
+  "executionRoleArn": "REPLACED_BY_DEPLOY_SCRIPT",
+  "taskRoleArn": "REPLACED_BY_DEPLOY_SCRIPT",
+  "containerDefinitions": [
+    {
+      "name": "backend",
+      "image": "REPLACED_BY_DEPLOY_SCRIPT",
+      "essential": true,
+      "portMappings": [{ "containerPort": 8000, "protocol": "tcp" }],
+      "environment": [{ "name": "FRONTEND_ORIGIN", "value": "REPLACED_BY_DEPLOY_SCRIPT" }],
+      "secrets": [
+        { "name": "DATABASE_URL", "valueFrom": "REPLACED_BY_DEPLOY_SCRIPT" },
+        { "name": "CLOUDINARY_CLOUD_NAME", "valueFrom": "REPLACED_BY_DEPLOY_SCRIPT" },
+        { "name": "CLOUDINARY_API_KEY", "valueFrom": "REPLACED_BY_DEPLOY_SCRIPT" },
+        { "name": "CLOUDINARY_API_SECRET", "valueFrom": "REPLACED_BY_DEPLOY_SCRIPT" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/reelhire/backend",
+          "awslogs-region": "REPLACED_BY_DEPLOY_SCRIPT",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}
