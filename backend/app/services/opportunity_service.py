@@ -161,6 +161,9 @@ class OpportunityService:
         for opportunity in opportunities:
             submission = await self.submission_repository.get_for_candidate_opportunity(candidate.id, opportunity.id)
             item = opportunity_response(opportunity, self.employer).model_dump(mode="json")
-            item["challenge_status"] = "submitted" if submission else "in progress"
+            item["challenge_status"] = "analysis_failed" if submission and submission.status == "analysis_failed" else (
+                "submitted" if submission else "in progress"
+            )
+            item["submission_id"] = submission.id if submission else None
             responses.append(item)
         return responses

@@ -49,6 +49,24 @@ function mapOpportunity(item: ApiOpportunity): Opportunity {
 
 function mapSubmission(item: ApiSubmission): Submission {
   const explanationVideo = mapApiMediaAsset(item.explanation_video);
+  const analysis = item.analysis
+    ? {
+        overallScore: item.analysis.overall_score,
+        codeQuality: item.analysis.code_quality,
+        architecture: item.analysis.architecture,
+        testing: item.analysis.testing,
+        documentation: item.analysis.documentation,
+        summary: item.analysis.summary,
+        strengths: item.analysis.strengths,
+        concerns: item.analysis.concerns,
+        evidence: item.analysis.evidence.map((evidence) => ({
+          label: evidence.label,
+          file: evidence.file,
+          lines: evidence.lines,
+          note: evidence.note,
+        })),
+      }
+    : undefined;
   return {
     id: item.id,
     candidate: item.candidate,
@@ -58,6 +76,11 @@ function mapSubmission(item: ApiSubmission): Submission {
     explanationVideo,
     submittedAt: item.created_at,
     status: item.status,
+    analysis,
+    analysisError: item.analysis_error ?? undefined,
+    analysisModel: item.analysis_model ?? undefined,
+    analysisCommitSha: item.analysis_commit_sha ?? undefined,
+    analysisEvaluatedAt: item.analysis_evaluated_at ?? undefined,
   };
 }
 
@@ -107,10 +130,14 @@ export class ApiHiringRepository implements HiringRepository {
   }
 
   async getCandidateChallenges() {
-    const items = await apiRequest("/api/candidate/challenges", z.array(apiOpportunitySchema.extend({ challenge_status: z.string() })));
+    const items = await apiRequest(
+      "/api/candidate/challenges",
+      z.array(apiOpportunitySchema.extend({ challenge_status: z.string(), submission_id: z.string().nullable().optional() })),
+    );
     return items.map((item) => ({
       ...mapOpportunity(item),
       challengeStatus: item.challenge_status,
+      submissionId: item.submission_id ?? undefined,
     }));
   }
 
@@ -134,6 +161,13 @@ export class ApiHiringRepository implements HiringRepository {
             }
           : undefined,
       }),
+    });
+    return mapSubmission(item);
+  }
+
+  async retrySubmissionAnalysis(submissionId: string) {
+    const item = await apiRequest(`/api/submissions/${submissionId}/analysis/retry`, apiSubmissionSchema, {
+      method: "POST",
     });
     return mapSubmission(item);
   }

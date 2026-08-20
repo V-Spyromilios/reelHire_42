@@ -1,9 +1,12 @@
 from datetime import datetime
 from enum import StrEnum
+from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.media import MediaAsset, MediaAssetResponse
+
+SkillName = Annotated[str, Field(min_length=1, max_length=100)]
 
 
 class WorkMode(StrEnum):
@@ -29,10 +32,10 @@ class EmployerResponse(BaseModel):
 
 class CreateOpportunityRequest(BaseModel):
     role_title: str = Field(min_length=3, max_length=160)
-    short_description: str = Field(min_length=12)
+    short_description: str = Field(min_length=12, max_length=1_200)
     challenge_title: str = Field(min_length=4, max_length=200)
-    challenge_description: str = Field(min_length=24)
-    skills: list[str] = Field(min_length=1, max_length=12)
+    challenge_description: str = Field(min_length=24, max_length=6_000)
+    skills: list[SkillName] = Field(min_length=1, max_length=12)
     location: str = Field(min_length=2, max_length=160)
     work_mode: WorkMode
     expected_challenge_duration: str = Field(min_length=2, max_length=80)

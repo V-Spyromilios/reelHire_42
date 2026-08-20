@@ -1,7 +1,9 @@
 import uuid
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -26,6 +28,13 @@ class Submission(Base):
     explanation_video_created_at: Mapped[str | None] = mapped_column(String(80), nullable=True)
 
     status: Mapped[str] = mapped_column(String(32), default="submitted", index=True)
+    analysis: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    analysis_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    analysis_model: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    analysis_commit_sha: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    analysis_run_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    analysis_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    analysis_evaluated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
