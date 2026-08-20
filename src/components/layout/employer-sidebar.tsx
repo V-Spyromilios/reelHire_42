@@ -9,9 +9,9 @@ import { cn } from "@/lib/utils/cn";
 const items = [
   { href: "/employer/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/employer/opportunities", label: "Opportunities", icon: BriefcaseBusiness },
-  { href: "/employer/opportunities/opp-backend-nova/submissions", label: "Talent", icon: UsersRound },
+  { href: "/employer/opportunities", label: "Talent", icon: UsersRound },
   { href: "/employer/matches", label: "Matches", icon: Sparkles },
-  { href: "/employer/opportunities/opp-backend-nova/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/employer/dashboard", label: "Analytics", icon: BarChart3 },
 ];
 
 export function EmployerSidebar() {

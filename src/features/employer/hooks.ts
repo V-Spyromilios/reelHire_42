@@ -18,9 +18,10 @@ export function useDeleteOpportunity() {
   return useMutation({
     mutationFn: (id: string) => hiringService.deleteOpportunity(id),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["employer", "opportunities"] });
+      void queryClient.invalidateQueries({ queryKey: ["employer"] });
       void queryClient.invalidateQueries({ queryKey: ["opportunities", "feed"] });
       void queryClient.invalidateQueries({ queryKey: ["candidate", "challenges"] });
+      void queryClient.invalidateQueries({ queryKey: ["matches"] });
     },
   });
 }
@@ -30,15 +31,16 @@ export function useCreateOpportunity() {
   return useMutation({
     mutationFn: (input: CreateOpportunityInput) => hiringService.createOpportunity(input),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["employer", "opportunities"] });
+      void queryClient.invalidateQueries({ queryKey: ["employer"] });
       void queryClient.invalidateQueries({ queryKey: ["opportunities", "feed"] });
     },
   });
 }
 
-export function useOpportunityAnalytics(opportunityId: string) {
+export function useOpportunityAnalytics(opportunityId: string | null | undefined) {
   return useQuery({
-    queryKey: ["employer", "opportunities", opportunityId, "analytics"],
-    queryFn: () => hiringService.getOpportunityAnalytics(opportunityId),
+    queryKey: ["employer", "opportunities", opportunityId ?? "none", "analytics"],
+    queryFn: () => (opportunityId ? hiringService.getOpportunityAnalytics(opportunityId) : null),
+    enabled: Boolean(opportunityId),
   });
 }

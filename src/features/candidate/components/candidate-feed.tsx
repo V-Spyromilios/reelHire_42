@@ -127,6 +127,7 @@ function FeedCard({
   showOnboarding,
   accepting,
   accepted,
+  reactionError,
   onVideoDuration,
   isMuted,
   audioFeedback,
@@ -143,6 +144,7 @@ function FeedCard({
   showOnboarding: boolean;
   accepting: boolean;
   accepted: boolean;
+  reactionError: string | null;
   onVideoDuration: (durationMs: number) => void;
   isMuted: boolean;
   audioFeedback: AudioFeedback | null;
@@ -349,13 +351,13 @@ function FeedCard({
             >
               <Bookmark className="h-5 w-5" />
             </button>
-            <motion.button
-              aria-live="polite"
-              disabled={accepting}
-              onClick={() => {
-                onInteraction();
-                onReact("accepted");
-              }}
+              <motion.button
+                aria-live="polite"
+                disabled={accepting || accepted}
+                onClick={() => {
+                  onInteraction();
+                  onReact("accepted");
+                }}
               whileTap={reducedMotion ? undefined : { scale: 0.985 }}
               className="inline-flex h-12 min-w-0 items-center justify-center gap-2 rounded-full border border-white/14 bg-black/30 px-4 text-sm font-bold text-[#f4f1e8] shadow-[0_14px_40px_rgba(0,0,0,0.28)] backdrop-blur-md transition hover:border-[var(--accent)]/40 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] disabled:opacity-80"
             >
@@ -365,6 +367,18 @@ function FeedCard({
           </div>
 
           <AnimatePresence>
+            {reactionError ? (
+              <motion.div
+                key="reaction-error"
+                initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 6, scale: 0.98 }}
+                transition={{ type: "spring", stiffness: 360, damping: 28 }}
+                className="rounded-2xl border border-[#f5b6a8]/24 bg-[#8a2d1f]/18 px-4 py-3 text-sm font-semibold text-[#ffe8e2]"
+              >
+                {reactionError}
+              </motion.div>
+            ) : null}
             {accepted ? (
               <motion.div
                 initial={{ opacity: 0, y: 8, scale: 0.98 }}
@@ -416,6 +430,7 @@ export function CandidateFeed() {
   const [sheetOpportunity, setSheetOpportunity] = useState<Opportunity | null>(null);
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
   const [acceptedId, setAcceptedId] = useState<string | null>(null);
+  const [reactionError, setReactionError] = useState<string | null>(null);
   const [isMuted, setIsMuted] = useState(readMutedPreference);
   const [audioFeedback, setAudioFeedback] = useState<AudioFeedback | null>(null);
   const [showSoundHint, setShowSoundHint] = useState(readShouldShowSoundHint);
@@ -485,6 +500,7 @@ export function CandidateFeed() {
     dismissOnboarding();
     setAcceptedId(null);
     setAcceptingId(null);
+    setReactionError(null);
     setIndex((current) => Math.min(current + 1, Math.max(opportunities.length - 1, 0)));
   }, [dismissOnboarding, opportunities.length]);
 
@@ -492,6 +508,7 @@ export function CandidateFeed() {
     dismissOnboarding();
     setAcceptedId(null);
     setAcceptingId(null);
+    setReactionError(null);
     setIndex((current) => Math.max(current - 1, 0));
   }, [dismissOnboarding]);
 
@@ -506,7 +523,9 @@ export function CandidateFeed() {
   const react = useCallback(
     async (reaction: FeedReaction, options?: { advance?: boolean }) => {
       if (!active) return;
+      if (acceptingId) return;
       dismissOnboarding();
+      setReactionError(null);
       const shouldAdvance = options?.advance ?? reaction !== "saved";
       const metrics = getWatchMetrics(active.id);
 
@@ -514,22 +533,31 @@ export function CandidateFeed() {
         setAcceptingId(active.id);
       }
 
-      await reactionMutation.mutateAsync({ opportunityId: active.id, reaction, ...metrics });
+      try {
+        await reactionMutation.mutateAsync({ opportunityId: active.id, reaction, ...metrics });
 
-      if (reaction === "accepted") {
-        setAcceptingId(null);
-        setAcceptedId(active.id);
-        window.setTimeout(() => {
-          if (shouldAdvance) next();
-        }, 950);
-        return;
-      }
+        if (reaction === "accepted") {
+          setAcceptedId(active.id);
+          window.setTimeout(() => {
+            if (shouldAdvance) next();
+          }, 950);
+          return;
+        }
 
-      if (shouldAdvance) {
-        next();
+        if (shouldAdvance) {
+          next();
+        }
+      } catch {
+        setReactionError(
+          reaction === "accepted" ? "Could not accept challenge. Try again." : "Could not save your response. Try again.",
+        );
+      } finally {
+        if (reaction === "accepted") {
+          setAcceptingId(null);
+        }
       }
     },
-    [active, dismissOnboarding, getWatchMetrics, next, reactionMutation],
+    [acceptingId, active, dismissOnboarding, getWatchMetrics, next, reactionMutation],
   );
 
   useEffect(() => {
@@ -597,6 +625,7 @@ export function CandidateFeed() {
             showOnboarding={showOnboarding}
             accepting={acceptingId === active.id}
             accepted={acceptedId === active.id}
+            reactionError={reactionError}
             isMuted={isMuted}
             audioFeedback={audioFeedback}
             showSoundHint={showSoundHint}

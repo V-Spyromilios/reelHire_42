@@ -49,3 +49,4 @@ class CandidateReaction(Base):
     watch_time_ms: Mapped[int] = mapped_column(Integer)
     video_duration_ms: Mapped[int] = mapped_column(Integer)
     reacted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    withdrawn_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

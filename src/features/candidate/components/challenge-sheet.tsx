@@ -31,14 +31,21 @@ export function ChallengeSheet({
   const reducedMotion = useReducedMotion();
   const [accepting, setAccepting] = useState(false);
   const [accepted, setAccepted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const carePoints = useMemo(() => getCarePoints(opportunity), [opportunity]);
 
   const handleAccept = async () => {
     if (accepting || accepted) return;
     setAccepting(true);
-    await onAccept();
-    setAccepting(false);
-    setAccepted(true);
+    setError(null);
+    try {
+      await onAccept();
+      setAccepted(true);
+    } catch {
+      setError("Could not accept challenge. Try again.");
+    } finally {
+      setAccepting(false);
+    }
   };
 
   return (
@@ -154,6 +161,7 @@ export function ChallengeSheet({
                   {accepting ? "Accepting..." : "Accept Challenge"}
                 </motion.span>
               </Button>
+              {error ? <p className="text-center text-sm font-semibold text-[#ffd3ca]">{error}</p> : null}
               <button
                 onClick={onClose}
                 className="h-11 rounded-full text-sm font-bold text-[#d8d6ce]/58 transition hover:text-[#f3f1ea] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"

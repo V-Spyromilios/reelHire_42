@@ -17,6 +17,7 @@ import type {
 } from "@/repositories/contracts";
 import {
   apiCandidateReactionSchema,
+  apiOpportunityAnalyticsSchema,
   apiOpportunityListSchema,
   apiOpportunitySchema,
   apiSubmissionListSchema,
@@ -84,23 +85,6 @@ function mapSubmission(item: ApiSubmission): Submission {
   };
 }
 
-const emptyAnalytics: OpportunityAnalytics = {
-  opportunityId: "",
-  impressions: 0,
-  uniqueViews: 0,
-  acceptedCount: 0,
-  passedCount: 0,
-  savedCount: 0,
-  submissionsCount: 0,
-  acceptanceRate: 0,
-  averageDecisionTimeMs: 0,
-  medianDecisionTimeMs: 0,
-  averageWatchTimeMs: 0,
-  completionRate: 0,
-  insight: "Analytics will populate as candidates watch and respond to this pitch.",
-  decisionTimeDistribution: [],
-};
-
 export class ApiHiringRepository implements HiringRepository {
   async getOpportunitiesFeed() {
     const items = await apiRequest("/api/opportunities/feed", apiOpportunityListSchema);
@@ -126,6 +110,12 @@ export class ApiHiringRepository implements HiringRepository {
         video_duration_ms: input.videoDurationMs,
         reacted_at: new Date().toISOString(),
       }),
+    });
+  }
+
+  async removeCandidateReaction(opportunityId: string) {
+    await apiRequest(`/api/opportunities/${opportunityId}/reactions`, z.undefined(), {
+      method: "DELETE",
     });
   }
 
@@ -215,7 +205,12 @@ export class ApiHiringRepository implements HiringRepository {
   }
 
   async getOpportunityAnalytics(opportunityId: string) {
-    return { ...emptyAnalytics, opportunityId };
+    try {
+      return await apiRequest(`/api/employer/opportunities/${opportunityId}/analytics`, apiOpportunityAnalyticsSchema);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) return null;
+      throw error;
+    }
   }
 
   async getOpportunitySubmissions(opportunityId: string) {

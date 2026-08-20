@@ -41,6 +41,10 @@ class SubmissionRepository:
         result = await self.session.scalars(select(Submission.id).where(Submission.opportunity_id == opportunity_id).limit(1))
         return 1 if result.first() else 0
 
+    async def count_all_for_opportunity(self, opportunity_id: str) -> int:
+        result = await self.session.scalars(select(Submission.id).where(Submission.opportunity_id == opportunity_id))
+        return len(list(result))
+
     async def upsert(self, submission: Submission) -> Submission:
         values = {
             "candidate_id": submission.candidate_id,
