@@ -1,0 +1,14 @@
+{
+  "candidate_id": "c_2f19",
+  "current_title": "Marketing Attribution Analyst",
+  "years_experience": 4,
+  "skills": ["Snowflake", "BigQuery", "LookML", "Python", "SQL", "IHC attribution"],
+  "industries": ["B2B analytics consulting"],
+  "locations_open_to": ["Berlin", "remote EU"],
+  "remote_preference": "hybrid",
+  "languages": [{"lang": "English", "level": "C2"}, {"lang": "German", "level": "C1"}],
+  "comp_expectation_min": 70000, "currency": "EUR",
+  "work_authorization": "EU",
+  "notice_period_weeks": 8,
+  "summary": "Attribution modelling and BI development for marketing analytics clients."
+}
