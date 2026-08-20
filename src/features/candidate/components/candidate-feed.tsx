@@ -8,7 +8,7 @@ import {
   useReducedMotion,
   useTransform,
 } from "motion/react";
-import { Bookmark, Check, ChevronDown, ChevronUp, Eye, Trophy, X } from "lucide-react";
+import { Bookmark, Check, ChevronDown, ChevronUp, Eye, Trophy, Volume2, VolumeX, X } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LoadingState } from "@/components/ui/state";
@@ -21,6 +21,57 @@ type FeedReaction = Extract<CandidateReactionKind, "accepted" | "passed" | "save
 const decisionThreshold = 118;
 const verticalThreshold = 92;
 const navSafeSpace = "calc(4.75rem + env(safe-area-inset-bottom))";
+const feedMutedPreferenceKey = "reelhire:candidate-feed-muted";
+const feedSoundHintKey = "reelhire:candidate-feed-sound-hint";
+
+type AudioFeedback = "Sound on" | "Muted" | "Sound blocked";
+
+let inMemoryMutedPreference: boolean | null = null;
+let inMemorySoundHintDismissed = false;
+
+function readMutedPreference() {
+  if (inMemoryMutedPreference !== null) return inMemoryMutedPreference;
+  if (typeof window === "undefined") return true;
+
+  try {
+    return window.sessionStorage.getItem(feedMutedPreferenceKey) !== "false";
+  } catch {
+    return true;
+  }
+}
+
+function writeMutedPreference(muted: boolean) {
+  inMemoryMutedPreference = muted;
+  if (typeof window === "undefined") return;
+
+  try {
+    window.sessionStorage.setItem(feedMutedPreferenceKey, String(muted));
+  } catch {
+    // Some browser/privacy modes block storage; keep the in-memory session fallback.
+  }
+}
+
+function readShouldShowSoundHint() {
+  if (inMemorySoundHintDismissed) return false;
+  if (typeof window === "undefined") return false;
+
+  try {
+    return window.sessionStorage.getItem(feedSoundHintKey) !== "true";
+  } catch {
+    return true;
+  }
+}
+
+function writeSoundHintDismissed() {
+  inMemorySoundHintDismissed = true;
+  if (typeof window === "undefined") return;
+
+  try {
+    window.sessionStorage.setItem(feedSoundHintKey, "true");
+  } catch {
+    // Storage is only an enhancement for this small onboarding hint.
+  }
+}
 
 function OnboardingHint({ visible }: { visible: boolean }) {
   return (
@@ -77,6 +128,11 @@ function FeedCard({
   accepting,
   accepted,
   onVideoDuration,
+  isMuted,
+  audioFeedback,
+  showSoundHint,
+  onToggleMuted,
+  onPlaybackBlocked,
 }: {
   opportunity: Opportunity;
   onInspect: () => void;
@@ -88,18 +144,69 @@ function FeedCard({
   accepting: boolean;
   accepted: boolean;
   onVideoDuration: (durationMs: number) => void;
+  isMuted: boolean;
+  audioFeedback: AudioFeedback | null;
+  showSoundHint: boolean;
+  onToggleMuted: (video: HTMLVideoElement | null) => void;
+  onPlaybackBlocked: () => void;
 }) {
   const reducedMotion = useReducedMotion();
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
   const rotate = useTransform(x, [-180, 0, 180], [-4, 0, 4]);
   const acceptOpacity = useTransform(x, [18, decisionThreshold], [0, 1]);
   const passOpacity = useTransform(x, [-decisionThreshold, -18], [1, 0]);
+  const soundLabel = audioFeedback ?? (showSoundHint && isMuted ? "Tap for sound" : null);
 
   const resetCard = () => {
     void animate(x, 0, { type: "spring", stiffness: 360, damping: 30 });
     void animate(y, 0, { type: "spring", stiffness: 360, damping: 30 });
   };
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    document.querySelectorAll<HTMLVideoElement>("video[data-candidate-reel-video]").forEach((candidateVideo) => {
+      if (candidateVideo !== video) candidateVideo.pause();
+    });
+
+    video.muted = isMuted;
+    const playPromise = video.play();
+    if (playPromise) {
+      playPromise.catch(() => {
+        if (!isMuted) {
+          video.muted = true;
+          onPlaybackBlocked();
+        }
+      });
+    }
+
+    return () => {
+      video.pause();
+    };
+  }, [isMuted, onPlaybackBlocked, opportunity.id]);
+
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      const video = videoRef.current;
+      if (!video) return;
+
+      if (document.hidden) {
+        video.pause();
+        return;
+      }
+
+      video.muted = isMuted;
+      void video.play().catch(() => {
+        if (!isMuted) onPlaybackBlocked();
+      });
+    };
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+  }, [isMuted, onPlaybackBlocked]);
 
   return (
     <motion.article
@@ -135,8 +242,10 @@ function FeedCard({
       className="absolute inset-0 touch-none overflow-hidden bg-black"
     >
       <video
+        ref={videoRef}
+        data-candidate-reel-video
         autoPlay
-        muted
+        muted={isMuted}
         loop
         playsInline
         className="absolute inset-0 h-full w-full object-cover opacity-[0.74]"
@@ -148,6 +257,47 @@ function FeedCard({
 
       <OnboardingHint visible={showOnboarding} />
       <DecisionFeedback acceptOpacity={acceptOpacity} passOpacity={passOpacity} />
+
+      <div className="pointer-events-auto absolute right-4 top-5 z-30 flex flex-col items-end gap-2">
+        <motion.button
+          aria-label={isMuted ? "Turn sound on" : "Mute video"}
+          type="button"
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            onInteraction();
+            onToggleMuted(videoRef.current);
+          }}
+          whileTap={reducedMotion ? undefined : { scale: 0.94 }}
+          className="flex h-11 w-11 items-center justify-center rounded-full border border-white/12 bg-black/34 text-[#f4f1e8] shadow-[0_12px_32px_rgba(0,0,0,0.28)] backdrop-blur-md transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+        >
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.span
+              key={isMuted ? "muted" : "sound"}
+              initial={reducedMotion ? false : { opacity: 0, scale: 0.82 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.82 }}
+              transition={{ duration: 0.16 }}
+            >
+              {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5 text-[var(--accent)]" />}
+            </motion.span>
+          </AnimatePresence>
+        </motion.button>
+        <AnimatePresence>
+          {soundLabel ? (
+            <motion.div
+              key={soundLabel}
+              initial={reducedMotion ? false : { opacity: 0, y: -4, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -4, scale: 0.98 }}
+              transition={{ duration: 0.2 }}
+              className="rounded-full border border-white/10 bg-black/34 px-3 py-1.5 text-[11px] font-bold text-[#f4f1e8]/82 shadow-xl backdrop-blur-md"
+            >
+              {soundLabel}
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+      </div>
 
       <div
         data-testid="candidate-feed-bottom-stack"
@@ -233,7 +383,7 @@ function FeedCard({
         </div>
       </div>
 
-      <div className="pointer-events-auto absolute right-4 top-5 z-20 hidden gap-2 sm:flex">
+      <div className="pointer-events-auto absolute right-16 top-5 z-20 hidden gap-2 sm:flex">
         <button
           aria-label="Previous opportunity"
           onClick={() => {
@@ -266,11 +416,16 @@ export function CandidateFeed() {
   const [sheetOpportunity, setSheetOpportunity] = useState<Opportunity | null>(null);
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
   const [acceptedId, setAcceptedId] = useState<string | null>(null);
+  const [isMuted, setIsMuted] = useState(readMutedPreference);
+  const [audioFeedback, setAudioFeedback] = useState<AudioFeedback | null>(null);
+  const [showSoundHint, setShowSoundHint] = useState(readShouldShowSoundHint);
   const [showOnboarding, setShowOnboarding] = useState(
     () => typeof window !== "undefined" && window.sessionStorage.getItem("reelhire-feed-onboarded") !== "true",
   );
   const activeStartedAt = useRef(0);
   const videoDurations = useRef<Record<string, number>>({});
+  const audioFeedbackTimer = useRef<number | null>(null);
+  const soundHintTimer = useRef<number | null>(null);
   const opportunities = useMemo(() => data ?? [], [data]);
   const active = opportunities[index];
 
@@ -280,6 +435,51 @@ export function CandidateFeed() {
       window.sessionStorage.setItem("reelhire-feed-onboarded", "true");
     }
   }, []);
+
+  const dismissSoundHint = useCallback(() => {
+    setShowSoundHint(false);
+    writeSoundHintDismissed();
+  }, []);
+
+  const showAudioStatus = useCallback((message: AudioFeedback) => {
+    setAudioFeedback(message);
+    if (audioFeedbackTimer.current) window.clearTimeout(audioFeedbackTimer.current);
+    audioFeedbackTimer.current = window.setTimeout(() => {
+      setAudioFeedback(null);
+      audioFeedbackTimer.current = null;
+    }, 1_100);
+  }, []);
+
+  const setMutedPreference = useCallback((muted: boolean) => {
+    setIsMuted(muted);
+    writeMutedPreference(muted);
+  }, []);
+
+  const toggleMuted = useCallback(
+    (video: HTMLVideoElement | null) => {
+      const nextMuted = !isMuted;
+      dismissSoundHint();
+      setMutedPreference(nextMuted);
+      showAudioStatus(nextMuted ? "Muted" : "Sound on");
+
+      if (!video) return;
+
+      video.muted = nextMuted;
+      if (!nextMuted) {
+        void video.play().catch(() => {
+          video.muted = true;
+          setMutedPreference(true);
+          showAudioStatus("Sound blocked");
+        });
+      }
+    },
+    [dismissSoundHint, isMuted, setMutedPreference, showAudioStatus],
+  );
+
+  const handlePlaybackBlocked = useCallback(() => {
+    setMutedPreference(true);
+    showAudioStatus("Sound blocked");
+  }, [setMutedPreference, showAudioStatus]);
 
   const next = useCallback(() => {
     dismissOnboarding();
@@ -337,6 +537,28 @@ export function CandidateFeed() {
   }, [active?.id]);
 
   useEffect(() => {
+    if (!showSoundHint) return;
+    soundHintTimer.current = window.setTimeout(() => {
+      dismissSoundHint();
+      soundHintTimer.current = null;
+    }, 2_000);
+
+    return () => {
+      if (soundHintTimer.current) {
+        window.clearTimeout(soundHintTimer.current);
+        soundHintTimer.current = null;
+      }
+    };
+  }, [dismissSoundHint, showSoundHint]);
+
+  useEffect(() => {
+    return () => {
+      if (audioFeedbackTimer.current) window.clearTimeout(audioFeedbackTimer.current);
+      if (soundHintTimer.current) window.clearTimeout(soundHintTimer.current);
+    };
+  }, []);
+
+  useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "ArrowDown") next();
       if (event.key === "ArrowUp") previous();
@@ -375,6 +597,11 @@ export function CandidateFeed() {
             showOnboarding={showOnboarding}
             accepting={acceptingId === active.id}
             accepted={acceptedId === active.id}
+            isMuted={isMuted}
+            audioFeedback={audioFeedback}
+            showSoundHint={showSoundHint}
+            onToggleMuted={toggleMuted}
+            onPlaybackBlocked={handlePlaybackBlocked}
             onVideoDuration={(durationMs) => {
               videoDurations.current[active.id] = durationMs;
             }}
