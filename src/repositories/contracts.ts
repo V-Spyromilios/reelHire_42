@@ -49,6 +49,7 @@ export interface HiringRepository {
   getOpportunitiesFeed(): Promise<Opportunity[]>;
   getOpportunity(id: string): Promise<Opportunity | null>;
   createCandidateReaction(input: CreateCandidateReactionInput): Promise<CandidateReaction>;
+  removeCandidateReaction(opportunityId: string): Promise<void>;
   getCandidateChallenges(candidateId: string): Promise<Array<Opportunity & { challengeStatus: string }>>;
   createSubmission(input: CreateSubmissionInput): Promise<Submission>;
   getEmployerOpportunities(employerId: string): Promise<Opportunity[]>;

@@ -6,6 +6,7 @@ from app.db.session import get_session
 from app.dependencies.identity import CandidateIdentity, EmployerIdentity, get_current_candidate, get_current_employer
 from app.repositories.opportunity_repository import OpportunityRepository
 from app.repositories.submission_repository import SubmissionRepository
+from app.schemas.analytics import OpportunityAnalyticsResponse
 from app.schemas.opportunity import CreateOpportunityRequest, OpportunityResponse
 from app.schemas.reaction import CandidateReactionRequest, CandidateReactionResponse
 from app.services.cloudinary_service import CloudinaryService
@@ -44,13 +45,24 @@ async def create_opportunity(
 
 
 @router.get("/opportunities/feed", response_model=list[OpportunityResponse])
-async def opportunities_feed(service: OpportunityService = Depends(opportunity_service)) -> list[OpportunityResponse]:
-    return await service.list_feed()
+async def opportunities_feed(
+    candidate: CandidateIdentity = Depends(get_current_candidate),
+    service: OpportunityService = Depends(opportunity_service),
+) -> list[OpportunityResponse]:
+    return await service.list_feed(candidate)
 
 
 @router.get("/opportunities/{opportunity_id}", response_model=OpportunityResponse)
 async def get_opportunity(opportunity_id: str, service: OpportunityService = Depends(opportunity_service)) -> OpportunityResponse:
     return await service.get(opportunity_id)
+
+
+@router.get("/employer/opportunities/{opportunity_id}/analytics", response_model=OpportunityAnalyticsResponse)
+async def opportunity_analytics(
+    opportunity_id: str,
+    service: OpportunityService = Depends(opportunity_service),
+) -> OpportunityAnalyticsResponse:
+    return await service.analytics(opportunity_id)
 
 
 @router.delete("/opportunities/{opportunity_id}", status_code=204)
@@ -75,6 +87,18 @@ async def react_to_opportunity(
     response = await service.react(opportunity_id, candidate, payload)
     await session.commit()
     return response
+
+
+@router.delete("/opportunities/{opportunity_id}/reactions", status_code=204)
+async def remove_opportunity_reaction(
+    opportunity_id: str,
+    session: AsyncSession = Depends(get_session),
+    candidate: CandidateIdentity = Depends(get_current_candidate),
+    service: OpportunityService = Depends(opportunity_service),
+) -> Response:
+    await service.remove_candidate_reaction(opportunity_id, candidate)
+    await session.commit()
+    return Response(status_code=204)
 
 
 @router.get("/candidate/challenges")

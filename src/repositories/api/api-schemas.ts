@@ -3,6 +3,7 @@ import { candidateSchema } from "@/domain/schemas/candidate";
 import { employerSchema } from "@/domain/schemas/employer";
 import { mediaAssetSchema } from "@/domain/schemas/media";
 import { candidateReactionSchema } from "@/domain/schemas/reactions";
+import { opportunityAnalyticsSchema } from "@/domain/schemas/analytics";
 
 const apiMediaAssetSchema = z.object({
   public_id: z.string(),
@@ -52,6 +53,7 @@ export const apiSubmissionSchema = z.object({
 export const apiOpportunityListSchema = z.array(apiOpportunitySchema);
 export const apiSubmissionListSchema = z.array(apiSubmissionSchema);
 export const apiCandidateReactionSchema = candidateReactionSchema;
+export const apiOpportunityAnalyticsSchema = opportunityAnalyticsSchema;
 
 export const apiMatchListSchema = z.array(z.never());
 

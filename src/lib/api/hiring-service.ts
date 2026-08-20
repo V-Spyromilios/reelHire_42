@@ -29,6 +29,10 @@ class HiringService {
     });
   }
 
+  removeCandidateReaction(opportunityId: string) {
+    return this.repository.removeCandidateReaction(opportunityId);
+  }
+
   getCandidateChallenges() {
     return this.repository.getCandidateChallenges(currentCandidateId);
   }

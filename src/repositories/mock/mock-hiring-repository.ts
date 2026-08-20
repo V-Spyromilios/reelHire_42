@@ -25,7 +25,9 @@ import type {
 
 const wait = (ms = 180) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const mutableCandidateReactions: CandidateReaction[] = [...candidateReactions];
+type MutableCandidateReaction = CandidateReaction & { withdrawnAt?: string | null };
+
+const mutableCandidateReactions: MutableCandidateReaction[] = [...candidateReactions];
 const mutableSubmissions: Submission[] = [...submissions];
 const mutableMatches: Match[] = [...matches];
 const mutableOpportunities: Opportunity[] = [...opportunities];
@@ -33,7 +35,15 @@ const mutableOpportunities: Opportunity[] = [...opportunities];
 export class MockHiringRepository implements HiringRepository {
   async getOpportunitiesFeed() {
     await wait();
-    return mutableOpportunities;
+    const activeAcceptedIds = new Set(
+      mutableCandidateReactions
+        .filter(
+          (reaction) =>
+            reaction.candidateId === currentCandidateId && reaction.reaction === "accepted" && !reaction.withdrawnAt,
+        )
+        .map((reaction) => reaction.opportunityId),
+    );
+    return mutableOpportunities.filter((opportunity) => !activeAcceptedIds.has(opportunity.id));
   }
 
   async getOpportunity(id: string) {
@@ -43,6 +53,18 @@ export class MockHiringRepository implements HiringRepository {
 
   async createCandidateReaction(input: CreateCandidateReactionInput) {
     await wait(120);
+    const existing = mutableCandidateReactions.find(
+      (reaction) => reaction.candidateId === input.candidateId && reaction.opportunityId === input.opportunityId,
+    );
+    if (existing) {
+      existing.reaction = input.reaction;
+      existing.watchTimeMs = input.watchTimeMs;
+      existing.videoDurationMs = input.videoDurationMs;
+      existing.reactedAt = new Date().toISOString();
+      existing.withdrawnAt = null;
+      return existing;
+    }
+
     const reaction: CandidateReaction = {
       id: `cr-${crypto.randomUUID()}`,
       reactedAt: new Date().toISOString(),
@@ -52,11 +74,33 @@ export class MockHiringRepository implements HiringRepository {
     return reaction;
   }
 
+  async removeCandidateReaction(opportunityId: string) {
+    await wait(120);
+    const hasSubmission = mutableSubmissions.some(
+      (submission) => submission.candidate.id === currentCandidateId && submission.opportunityId === opportunityId,
+    );
+    if (hasSubmission) {
+      throw new Error("This challenge already has a submitted project and cannot be removed.");
+    }
+
+    const existing = mutableCandidateReactions.find(
+      (reaction) =>
+        reaction.candidateId === currentCandidateId &&
+        reaction.opportunityId === opportunityId &&
+        reaction.reaction === "accepted" &&
+        !reaction.withdrawnAt,
+    );
+    if (!existing) {
+      throw new Error("Accepted challenge not found.");
+    }
+    existing.withdrawnAt = new Date().toISOString();
+  }
+
   async getCandidateChallenges(candidateId: string) {
     await wait();
     const acceptedIds = new Set(
       mutableCandidateReactions
-        .filter((reaction) => reaction.candidateId === candidateId && reaction.reaction === "accepted")
+        .filter((reaction) => reaction.candidateId === candidateId && reaction.reaction === "accepted" && !reaction.withdrawnAt)
         .map((reaction) => reaction.opportunityId),
     );
 
