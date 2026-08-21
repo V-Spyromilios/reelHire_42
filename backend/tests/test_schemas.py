@@ -35,7 +35,7 @@ def test_create_opportunity_schema() -> None:
 def test_create_submission_schema_validates_github() -> None:
     payload = CreateSubmissionRequest(
         opportunity_id="opp-1",
-        github_url="https://github.com/alexmorgan-dev/incident-queue",
+        github_url="https://github.com/Loki-apk/Agentic_Resell",
         explanation_video=media(),
     )
     assert str(payload.github_url).startswith("https://github.com/")

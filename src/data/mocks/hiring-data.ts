@@ -376,7 +376,7 @@ export const submissions: Submission[] = [
     id: "sub-alex-backend",
     candidate: candidates[0],
     opportunityId: "opp-backend-nova",
-    githubUrl: "https://github.com/alexmorgan-dev/incident-queue",
+    githubUrl: "https://github.com/Loki-apk/Agentic_Resell",
     explanationVideoUrl: "https://videos.pexels.com/video-files/3209298/3209298-uhd_2560_1440_25fps.mp4",
     submittedAt: "2026-08-19T18:34:00.000Z",
     status: "submitted",

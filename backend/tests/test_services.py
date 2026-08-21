@@ -430,7 +430,7 @@ async def test_create_submission_service() -> None:
     response = await service.create(
         CreateSubmissionRequest(
             opportunity_id="opp-test",
-            github_url="https://github.com/alexmorgan-dev/incident-queue",
+            github_url="https://github.com/Loki-apk/Agentic_Resell",
             explanation_video=media(),
         )
     )
@@ -448,7 +448,7 @@ async def test_identical_submission_does_not_start_a_second_paid_analysis() -> N
     service = SubmissionService(submissions, opportunities, CandidateIdentity())
     payload = CreateSubmissionRequest(
         opportunity_id="opp-test",
-        github_url="https://github.com/alexmorgan-dev/incident-queue",
+        github_url="https://github.com/Loki-apk/Agentic_Resell",
         explanation_video=media(),
     )
 
@@ -470,7 +470,7 @@ async def test_failed_analysis_can_retry_without_a_new_upload() -> None:
     created = await service.create(
         CreateSubmissionRequest(
             opportunity_id="opp-test",
-            github_url="https://github.com/alexmorgan-dev/incident-queue",
+            github_url="https://github.com/Loki-apk/Agentic_Resell",
             explanation_video=media(),
         )
     )
