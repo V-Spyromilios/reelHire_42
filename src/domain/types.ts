@@ -8,6 +8,6 @@ export type {
   EmployerReaction,
   EmployerReactionKind,
 } from "./schemas/reactions";
-export type { ProjectAnalysis, ProjectEvidence, Submission } from "./schemas/submission";
+export type { ProjectAnalysis, ProjectEvaluation, ProjectEvaluationEvidence, ProjectEvidence, Submission } from "./schemas/submission";
 export type { Match } from "./schemas/match";
 export type { DecisionTimeBucket, OpportunityAnalytics } from "./schemas/analytics";

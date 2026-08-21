@@ -73,17 +73,17 @@ export function CandidateSubmissionFlow({ opportunityId }: CandidateSubmissionFl
 
   return (
     <main className="mx-auto min-h-dvh max-w-[430px] px-5 pb-28 pt-8">
-      <Link href="/candidate/challenges" className="inline-flex items-center gap-2 text-sm font-bold text-white/58">
+      <Link href="/candidate/challenges" className="inline-flex items-center gap-2 text-sm font-bold text-[#f5f1e8]/58">
         <ArrowLeft className="h-4 w-4" />
         Challenges
       </Link>
       <p className="mt-6 text-sm font-semibold text-[var(--accent)]">Submission</p>
       <h1 className="mt-2 text-3xl font-black">Show your build</h1>
-      <p className="mt-3 text-sm leading-6 text-white/62">
+      <p className="mt-3 text-sm leading-6 text-[#f5f1e8]/62">
         Repository must be public during evaluation. Your explanation video can be up to 3 minutes.
       </p>
 
-      <div className="mt-7 flex rounded-full border border-white/10 bg-white/[0.05] p-1">
+      <div className="mt-7 flex rounded-full border border-[#f5f1e8]/10 bg-[#f5f1e8]/[0.05] p-1">
         {[
           { id: 1, label: "Repo", icon: Github },
           { id: 2, label: "Video", icon: Video },
@@ -97,33 +97,33 @@ export function CandidateSubmissionFlow({ opportunityId }: CandidateSubmissionFl
               type="button"
               onClick={() => setStep(item.id)}
               className={`flex h-10 flex-1 items-center justify-center gap-2 rounded-full text-xs font-bold transition ${
-                active ? "bg-white/12 text-white" : "text-white/48 hover:text-white"
+                active ? "bg-[rgba(var(--candidate-info-rgb),0.22)] text-[#f5f1e8]" : "text-[#f5f1e8]/48 hover:text-[#f5f1e8]"
               }`}
             >
-              <Icon className="h-4 w-4 text-[var(--accent)]" />
+              <Icon className="h-4 w-4 text-[var(--candidate-info)]" />
               {item.label}
             </button>
           );
         })}
       </div>
 
-      <section className="mt-5 rounded-[24px] border border-white/10 bg-white/[0.06] p-4">
+      <section className="mt-5 rounded-[24px] border border-[var(--candidate-line)] bg-[var(--candidate-surface)]/84 p-4 shadow-[0_18px_54px_rgba(0,0,0,0.14)]">
         {step === 1 ? (
           <div>
             <h2 className="text-xl font-black">GitHub repository</h2>
             <label className="mt-4 block">
-              <span className="text-sm font-bold text-white/72">Public repository URL</span>
+              <span className="text-sm font-bold text-[#f5f1e8]/72">Public repository URL</span>
               <input
                 value={githubUrl}
                 onChange={(event) => setGithubUrl(event.target.value)}
                 placeholder="https://github.com/you/project"
-                className="mt-2 h-12 w-full rounded-2xl border border-white/10 bg-black/24 px-4 text-sm outline-none transition placeholder:text-white/28 focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+                className="mt-2 h-12 w-full rounded-2xl border border-[var(--candidate-line)] bg-[var(--candidate-surface-2)]/62 px-4 text-sm outline-none transition placeholder:text-[#f5f1e8]/28 focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
               />
             </label>
             {githubUrl && validGithub ? (
               <div className="mt-4 rounded-2xl border border-[var(--accent)]/20 bg-[var(--accent)]/10 p-4">
-                <p className="text-sm font-black text-white">Repository ready</p>
-                <p className="mt-1 break-all text-sm text-white/62">{githubUrl}</p>
+                <p className="text-sm font-black text-[#f5f1e8]">Repository ready</p>
+                <p className="mt-1 break-all text-sm text-[#f5f1e8]/62">{githubUrl}</p>
               </div>
             ) : null}
           </div>
@@ -151,13 +151,13 @@ export function CandidateSubmissionFlow({ opportunityId }: CandidateSubmissionFl
           <div>
             <h2 className="text-xl font-black">Review & submit</h2>
             <div className="mt-4 space-y-3 text-sm">
-              <div className="rounded-2xl bg-black/20 p-4">
-                <p className="font-bold text-white/52">Repository</p>
-                <p className="mt-1 break-all text-white">{githubUrl || "Missing repository"}</p>
+              <div className="rounded-2xl bg-[var(--candidate-surface-2)]/62 p-4">
+                <p className="font-bold text-[#f5f1e8]/52">Repository</p>
+                <p className="mt-1 break-all text-[#f5f1e8]">{githubUrl || "Missing repository"}</p>
               </div>
-              <div className="rounded-2xl bg-black/20 p-4">
-                <p className="font-bold text-white/52">Explanation video</p>
-                <p className="mt-1 text-white">{video.file ? video.file.name : "Missing video"}</p>
+              <div className="rounded-2xl bg-[var(--candidate-surface-2)]/62 p-4">
+                <p className="font-bold text-[#f5f1e8]/52">Explanation video</p>
+                <p className="mt-1 text-[#f5f1e8]">{video.file ? video.file.name : "Missing video"}</p>
               </div>
             </div>
           </div>
@@ -167,7 +167,7 @@ export function CandidateSubmissionFlow({ opportunityId }: CandidateSubmissionFl
 
         <div className="mt-5 flex gap-3">
           {step > 1 ? (
-            <button type="button" onClick={() => setStep((current) => current - 1)} className="h-12 rounded-full border border-white/12 px-5 text-sm font-bold text-white/72">
+            <button type="button" onClick={() => setStep((current) => current - 1)} className="h-12 rounded-full border border-[#f5f1e8]/12 px-5 text-sm font-bold text-[#f5f1e8]/72">
               Back
             </button>
           ) : null}

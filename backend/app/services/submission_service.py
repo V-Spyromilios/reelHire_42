@@ -2,6 +2,8 @@ from fastapi import HTTPException, status
 
 from app.dependencies.identity import CandidateIdentity, EmployerIdentity
 from app.models.match import EmployerReaction, Match
+from app.models.evaluation import ProjectEvaluation
+from app.repositories.evaluation_repository import ProjectEvaluationRepository
 from app.models.submission import Submission
 from app.repositories.match_repository import MatchRepository
 from app.repositories.opportunity_repository import OpportunityRepository
@@ -9,6 +11,7 @@ from app.repositories.submission_repository import SubmissionRepository
 from app.schemas.media import MediaAssetResponse
 from app.schemas.reaction import EmployerReactionResponse
 from app.schemas.submission import CandidateResponse, CreateSubmissionRequest, SubmissionResponse
+from app.services.project_evaluation_service import project_evaluation_response
 
 
 def candidate_response(identity: CandidateIdentity) -> CandidateResponse:
@@ -57,6 +60,7 @@ def submission_response(
     candidate: CandidateIdentity,
     employer_reaction: EmployerReaction | None = None,
     match: Match | None = None,
+    project_evaluation: ProjectEvaluation | None = None,
 ) -> SubmissionResponse:
     return SubmissionResponse(
         id=submission.id,
@@ -72,6 +76,7 @@ def submission_response(
         employer_reaction=employer_reaction_response(employer_reaction),
         match_id=match.id if match else None,
         match_status=match.status if match else None,
+        project_evaluation=project_evaluation_response(project_evaluation) if project_evaluation else None,
     )
 
 
@@ -83,12 +88,14 @@ class SubmissionService:
         candidate: CandidateIdentity,
         employer: EmployerIdentity | None = None,
         match_repository: MatchRepository | None = None,
+        evaluation_repository: ProjectEvaluationRepository | None = None,
     ):
         self.repository = repository
         self.opportunity_repository = opportunity_repository
         self.candidate = candidate
         self.employer = employer
         self.match_repository = match_repository
+        self.evaluation_repository = evaluation_repository
 
     async def create(self, payload: CreateSubmissionRequest) -> SubmissionResponse:
         if not await self.opportunity_repository.get(payload.opportunity_id):
@@ -123,8 +130,8 @@ class SubmissionService:
         if not submission:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Submission not found.")
         await self._verify_employer_opportunity(submission.opportunity_id)
-        reaction, match = await self._review_metadata(submission.id)
-        return submission_response(submission, self.candidate, reaction, match)
+        reaction, match, evaluation = await self._review_metadata(submission.id)
+        return submission_response(submission, self.candidate, reaction, match, evaluation)
 
     async def list_candidate(self) -> list[SubmissionResponse]:
         return [submission_response(item, self.candidate) for item in await self.repository.list_for_candidate(self.candidate.id)]
@@ -133,8 +140,8 @@ class SubmissionService:
         await self._verify_employer_opportunity(opportunity_id)
         responses: list[SubmissionResponse] = []
         for item in await self.repository.list_for_opportunity(opportunity_id):
-            reaction, match = await self._review_metadata(item.id)
-            responses.append(submission_response(item, self.candidate, reaction, match))
+            reaction, match, evaluation = await self._review_metadata(item.id)
+            responses.append(submission_response(item, self.candidate, reaction, match, evaluation))
         return responses
 
     async def _verify_employer_opportunity(self, opportunity_id: str) -> None:
@@ -146,9 +153,8 @@ class SubmissionService:
         if opportunity.employer_id != self.employer.id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You don't have permission to review this opportunity.")
 
-    async def _review_metadata(self, submission_id: str) -> tuple[EmployerReaction | None, Match | None]:
-        if self.match_repository is None:
-            return None, None
-        reaction = await self.match_repository.get_employer_reaction_for_submission(submission_id)
-        match = await self.match_repository.get_match_by_submission(submission_id)
-        return reaction, match
+    async def _review_metadata(self, submission_id: str) -> tuple[EmployerReaction | None, Match | None, ProjectEvaluation | None]:
+        reaction = await self.match_repository.get_employer_reaction_for_submission(submission_id) if self.match_repository else None
+        match = await self.match_repository.get_match_by_submission(submission_id) if self.match_repository else None
+        evaluation = await self.evaluation_repository.get_for_submission(submission_id) if self.evaluation_repository else None
+        return reaction, match, evaluation

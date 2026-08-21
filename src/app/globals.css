@@ -7,9 +7,12 @@
   --primary-foreground: #f7f4ec;
   --primary-hover: #2b2a27;
   --primary-focus: #6f9f2f;
-  --candidate-bg: #050606;
-  --candidate-surface: rgba(20, 22, 22, 0.72);
-  --candidate-line: rgba(255, 255, 255, 0.14);
+  --candidate-bg: #1b1a18;
+  --candidate-surface: #24221f;
+  --candidate-surface-2: #2b2925;
+  --candidate-text: #f3efe7;
+  --candidate-muted: #b8b1a7;
+  --candidate-line: rgba(255, 255, 255, 0.1);
   --employer-bg: #f7f5ef;
   --employer-surface: #fffdf8;
   --employer-surface-2: #ebe7dc;
@@ -19,6 +22,14 @@
   --accent: #b6ff5f;
   --accent-strong: #8fe73d;
   --accent-ink: #102000;
+  --accent-rgb: 182, 255, 95;
+  --accent-shadow: rgba(182, 255, 95, 0.22);
+  --candidate-info: #557a95;
+  --candidate-info-rgb: 85, 122, 149;
+  --landing-bg: #f5f1e8;
+  --landing-surface: #fcfaf5;
+  --landing-text: #171717;
+  --landing-muted: #4e4942;
   --danger: #ff6a4d;
   --radius-sm: 10px;
   --radius-md: 16px;
@@ -75,9 +86,42 @@ select {
 
 .video-gradient {
   background:
-    radial-gradient(circle at 22% 12%, rgba(182, 255, 95, 0.26), transparent 26%),
+    radial-gradient(circle at 22% 12%, rgba(var(--accent-rgb), 0.24), transparent 26%),
     radial-gradient(circle at 82% 18%, rgba(255, 255, 255, 0.14), transparent 18%),
     linear-gradient(145deg, #101314, #060707 42%, #20241f 100%);
+}
+
+.landing-theme {
+  --background: #f5f1e8;
+  --foreground: #171717;
+  --accent: #e8663f;
+  --accent-strong: #c94f2e;
+  --accent-ink: #fff8f1;
+  --accent-rgb: 232, 102, 63;
+  --accent-shadow: rgba(232, 102, 63, 0.24);
+  --candidate-info: #557a95;
+  --candidate-info-rgb: 85, 122, 149;
+}
+
+.candidate-theme {
+  --candidate-bg: #1b1a18;
+  --candidate-surface: #24221f;
+  --candidate-surface-2: #2b2925;
+  --candidate-text: #f3efe7;
+  --candidate-muted: #b8b1a7;
+  --candidate-line: rgba(255, 255, 255, 0.1);
+  --accent: #e8663f;
+  --accent-strong: #f07b55;
+  --accent-ink: #fff8f1;
+  --accent-rgb: 232, 102, 63;
+  --accent-shadow: rgba(232, 102, 63, 0.24);
+  --candidate-info: #6f93aa;
+  --candidate-info-rgb: 111, 147, 170;
+  background:
+    radial-gradient(circle at 18% 8%, rgba(var(--accent-rgb), 0.12), transparent 28%),
+    radial-gradient(circle at 82% 0%, rgba(var(--candidate-info-rgb), 0.14), transparent 30%),
+    linear-gradient(180deg, #211f1c 0%, var(--candidate-bg) 46%, #181715 100%);
+  color: var(--candidate-text);
 }
 
 .employer-grid {
@@ -92,4 +136,9 @@ select {
   --primary-foreground: #f7f4ec;
   --primary-hover: #2b2a27;
   --primary-focus: #6f9f2f;
+  --accent: #b6ff5f;
+  --accent-strong: #8fe73d;
+  --accent-ink: #102000;
+  --accent-rgb: 182, 255, 95;
+  --accent-shadow: rgba(182, 255, 95, 0.22);
 }

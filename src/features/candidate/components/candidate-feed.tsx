@@ -82,9 +82,9 @@ function OnboardingHint({ visible }: { visible: boolean }) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.22 }}
-          className="pointer-events-none absolute left-5 top-6 z-20 flex items-center gap-2 rounded-full border border-white/10 bg-black/24 px-3 py-2 text-[11px] font-semibold text-white/58 backdrop-blur-md"
+          className="pointer-events-none absolute left-5 top-6 z-20 flex items-center gap-2 rounded-full border border-[var(--candidate-line)] bg-[var(--candidate-surface)]/62 px-3 py-2 text-[11px] font-semibold text-[var(--candidate-muted)] backdrop-blur-md"
         >
-          <Eye className="h-3.5 w-3.5 text-[var(--accent)]" />
+          <Eye className="h-3.5 w-3.5 text-[var(--candidate-info)]" />
           Swipe to browse and decide
         </motion.div>
       ) : null}
@@ -103,13 +103,13 @@ function DecisionFeedback({
     <>
       <motion.div
         style={{ opacity: passOpacity }}
-        className="pointer-events-none absolute left-5 top-[30%] z-20 rounded-full border border-white/16 bg-black/42 px-4 py-2 text-xs font-black tracking-wide text-white shadow-2xl backdrop-blur"
+        className="pointer-events-none absolute left-5 top-[30%] z-20 rounded-full border border-[var(--candidate-line)] bg-[var(--candidate-surface)]/70 px-4 py-2 text-xs font-black tracking-wide text-[var(--candidate-text)] shadow-2xl backdrop-blur"
       >
         PASS
       </motion.div>
       <motion.div
         style={{ opacity: acceptOpacity }}
-        className="pointer-events-none absolute right-5 top-[30%] z-20 rounded-full border border-[var(--accent)]/45 bg-black/42 px-4 py-2 text-xs font-black tracking-wide text-[var(--accent)] shadow-2xl backdrop-blur"
+        className="pointer-events-none absolute right-5 top-[30%] z-20 rounded-full border border-[var(--accent)]/45 bg-[var(--candidate-surface)]/70 px-4 py-2 text-xs font-black tracking-wide text-[var(--accent)] shadow-2xl backdrop-blur"
       >
         ACCEPT CHALLENGE
       </motion.div>
@@ -241,7 +241,7 @@ function FeedCard({
       animate={{ y: 0, opacity: 1, scale: accepted ? 0.985 : 1 }}
       exit={reducedMotion ? { opacity: 0 } : { y: -54, opacity: 0, scale: 0.97 }}
       transition={{ type: "spring", stiffness: 250, damping: 28 }}
-      className="absolute inset-0 touch-none overflow-hidden bg-black"
+      className="absolute inset-0 touch-none overflow-hidden bg-[var(--candidate-bg)]"
     >
       <video
         ref={videoRef}
@@ -254,8 +254,8 @@ function FeedCard({
         src={opportunity.videoUrl}
         onLoadedMetadata={(event) => onVideoDuration(Math.round(event.currentTarget.duration * 1000))}
       />
-      <div className="absolute inset-x-0 bottom-0 h-[70%] bg-[linear-gradient(180deg,rgba(5,6,6,0)_0%,rgba(5,6,6,0.26)_36%,rgba(5,6,6,0.72)_70%,rgba(5,6,6,0.94)_100%)]" />
-      <div className="absolute inset-x-0 top-0 h-36 bg-[linear-gradient(180deg,rgba(5,6,6,0.44),rgba(5,6,6,0))]" />
+      <div className="absolute inset-x-0 bottom-0 h-[70%] bg-[linear-gradient(180deg,rgba(27,26,24,0)_0%,rgba(27,26,24,0.3)_36%,rgba(27,26,24,0.78)_70%,rgba(27,26,24,0.94)_100%)]" />
+      <div className="absolute inset-x-0 top-0 h-36 bg-[linear-gradient(180deg,rgba(27,26,24,0.46),rgba(27,26,24,0))]" />
 
       <OnboardingHint visible={showOnboarding} />
       <DecisionFeedback acceptOpacity={acceptOpacity} passOpacity={passOpacity} />
@@ -271,7 +271,7 @@ function FeedCard({
             onToggleMuted(videoRef.current);
           }}
           whileTap={reducedMotion ? undefined : { scale: 0.94 }}
-          className="flex h-11 w-11 items-center justify-center rounded-full border border-white/12 bg-black/34 text-[#f4f1e8] shadow-[0_12px_32px_rgba(0,0,0,0.28)] backdrop-blur-md transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+          className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--candidate-line)] bg-[var(--candidate-surface)]/72 text-[var(--candidate-text)] shadow-[0_12px_32px_rgba(0,0,0,0.28)] backdrop-blur-md transition hover:bg-[var(--candidate-surface-2)]/86 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
         >
           <AnimatePresence mode="wait" initial={false}>
             <motion.span
@@ -281,7 +281,7 @@ function FeedCard({
               exit={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.82 }}
               transition={{ duration: 0.16 }}
             >
-              {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5 text-[var(--accent)]" />}
+              {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5 text-[var(--candidate-info)]" />}
             </motion.span>
           </AnimatePresence>
         </motion.button>
@@ -293,7 +293,7 @@ function FeedCard({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -4, scale: 0.98 }}
               transition={{ duration: 0.2 }}
-              className="rounded-full border border-white/10 bg-black/34 px-3 py-1.5 text-[11px] font-bold text-[#f4f1e8]/82 shadow-xl backdrop-blur-md"
+              className="rounded-full border border-[var(--candidate-line)] bg-[var(--candidate-surface)]/72 px-3 py-1.5 text-[11px] font-bold text-[var(--candidate-text)]/82 shadow-xl backdrop-blur-md"
             >
               {soundLabel}
             </motion.div>
@@ -308,9 +308,9 @@ function FeedCard({
       >
         <div className="pointer-events-auto space-y-4">
           <section data-testid="candidate-feed-role-info" className="max-w-[330px]">
-            <p className="text-sm font-semibold text-[#d8d6ce]/68">{opportunity.employer.companyName}</p>
-            <h1 className="mt-1 text-[2rem] font-black leading-[1.02] text-[#f4f1e8]">{opportunity.roleTitle}</h1>
-            <p className="mt-3 line-clamp-2 text-[15px] leading-6 text-[#dedbd2]/72">{opportunity.shortDescription}</p>
+            <p className="text-sm font-semibold text-[#d9d3c7]/68">{opportunity.employer.companyName}</p>
+            <h1 className="mt-1 text-[2rem] font-black leading-[1.02] text-[#f5f1e8]">{opportunity.roleTitle}</h1>
+            <p className="mt-3 line-clamp-2 text-[15px] leading-6 text-[#ded7ca]/72">{opportunity.shortDescription}</p>
           </section>
 
           <button
@@ -324,8 +324,8 @@ function FeedCard({
             <span className="block text-[11px] font-black uppercase tracking-[0.18em] text-[var(--accent)]/85">
               Challenge
             </span>
-            <span className="mt-1 block text-base font-black leading-5 text-[#f0eee7]">{opportunity.challengeTitle}</span>
-            <span className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-[#f0eee7]/72 transition group-hover:text-[#f0eee7]">
+            <span className="mt-1 block text-base font-black leading-5 text-[#f3eee4]">{opportunity.challengeTitle}</span>
+            <span className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-[#f3eee4]/72 transition group-hover:text-[#f3eee4]">
               View challenge <span aria-hidden>→</span>
             </span>
           </button>
@@ -337,7 +337,7 @@ function FeedCard({
                 onInteraction();
                 onReact("passed");
               }}
-              className="flex h-12 w-12 items-center justify-center rounded-full border border-white/12 bg-black/28 text-[#f4f1e8] backdrop-blur-md transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+              className="flex h-12 w-12 items-center justify-center rounded-full border border-[var(--candidate-line)] bg-[var(--candidate-surface)]/62 text-[var(--candidate-text)] backdrop-blur-md transition hover:bg-[var(--candidate-surface-2)]/82 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
             >
               <X className="h-5 w-5" />
             </button>
@@ -347,7 +347,7 @@ function FeedCard({
                 onInteraction();
                 onReact("saved");
               }}
-              className="flex h-12 w-12 items-center justify-center rounded-full border border-white/12 bg-black/28 text-[#f4f1e8] backdrop-blur-md transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+              className="flex h-12 w-12 items-center justify-center rounded-full border border-[var(--candidate-line)] bg-[var(--candidate-surface)]/62 text-[var(--candidate-text)] backdrop-blur-md transition hover:bg-[var(--candidate-surface-2)]/82 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
             >
               <Bookmark className="h-5 w-5" />
             </button>
@@ -359,7 +359,7 @@ function FeedCard({
                   onReact("accepted");
                 }}
               whileTap={reducedMotion ? undefined : { scale: 0.985 }}
-              className="inline-flex h-12 min-w-0 items-center justify-center gap-2 rounded-full border border-white/14 bg-black/30 px-4 text-sm font-bold text-[#f4f1e8] shadow-[0_14px_40px_rgba(0,0,0,0.28)] backdrop-blur-md transition hover:border-[var(--accent)]/40 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] disabled:opacity-80"
+              className="inline-flex h-12 min-w-0 items-center justify-center gap-2 rounded-full border border-[var(--accent)]/42 bg-[var(--candidate-surface)]/66 px-4 text-sm font-bold text-[var(--candidate-text)] shadow-[0_14px_40px_rgba(0,0,0,0.28)] backdrop-blur-md transition hover:border-[var(--accent)]/66 hover:bg-[var(--accent)]/12 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] disabled:opacity-80"
             >
               {accepted ? <Check className="h-4 w-4 text-[var(--accent)]" /> : <Trophy className="h-4 w-4 text-[var(--accent)]" />}
               <span className="truncate">{accepted ? "Challenge accepted" : accepting ? "Accepting..." : "Accept Challenge"}</span>
@@ -385,7 +385,7 @@ function FeedCard({
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 6, scale: 0.98 }}
                 transition={{ type: "spring", stiffness: 360, damping: 28 }}
-                className="rounded-2xl border border-[var(--accent)]/22 bg-[var(--accent)]/10 px-4 py-3 text-sm text-[#f4f1e8]"
+                className="rounded-2xl border border-[var(--accent)]/22 bg-[var(--accent)]/10 px-4 py-3 text-sm text-[#f5f1e8]"
               >
                 <p className="font-bold">You accepted this challenge.</p>
                 <Link href="/candidate/challenges" className="mt-1 inline-flex font-semibold text-[var(--accent)]">
@@ -404,7 +404,7 @@ function FeedCard({
             onInteraction();
             onPrevious();
           }}
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-white/8 bg-black/20 text-white/52 backdrop-blur-md transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--candidate-line)] bg-[var(--candidate-surface)]/48 text-[var(--candidate-muted)] backdrop-blur-md transition hover:text-[var(--candidate-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
         >
           <ChevronUp className="h-4 w-4" />
         </button>
@@ -414,7 +414,7 @@ function FeedCard({
             onInteraction();
             onNext();
           }}
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-white/8 bg-black/20 text-white/52 backdrop-blur-md transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--candidate-line)] bg-[var(--candidate-surface)]/48 text-[var(--candidate-muted)] backdrop-blur-md transition hover:text-[var(--candidate-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
         >
           <ChevronDown className="h-4 w-4" />
         </button>
@@ -602,16 +602,17 @@ export function CandidateFeed() {
   if (isError || !active) {
     return (
       <main className="flex min-h-dvh items-center justify-center px-6 text-center">
-        <div>
-          <h1 className="text-2xl font-black">No challenges in the feed</h1>
-          <p className="mt-2 text-white/60">The next batch of project pitches will appear here.</p>
+        <div className="max-w-[300px] rounded-[28px] border border-[var(--candidate-line)] bg-[var(--candidate-surface)]/68 px-6 py-7 shadow-[0_24px_70px_rgba(0,0,0,0.2)] backdrop-blur">
+          <span className="mx-auto block h-1.5 w-10 rounded-full bg-[var(--accent)]/72" />
+          <h1 className="mt-5 text-2xl font-black text-[var(--candidate-text)]">No challenges in the feed</h1>
+          <p className="mt-2 text-sm leading-6 text-[var(--candidate-muted)]">The next batch of project pitches will appear here.</p>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="mx-auto min-h-dvh max-w-[430px] bg-black">
+    <main className="mx-auto min-h-dvh max-w-[430px] bg-transparent">
       <div className="relative h-dvh overflow-hidden">
         <AnimatePresence mode="popLayout">
           <FeedCard

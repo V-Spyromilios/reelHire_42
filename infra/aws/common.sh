@@ -36,6 +36,7 @@ DB_PASSWORD_SECRET="${PREFIX}/db-password"
 CLOUDINARY_CLOUD_NAME_SECRET="${PREFIX}/cloudinary-cloud-name"
 CLOUDINARY_API_KEY_SECRET="${PREFIX}/cloudinary-api-key"
 CLOUDINARY_API_SECRET_SECRET="${PREFIX}/cloudinary-api-secret"
+OPENAI_API_KEY_SECRET="${PREFIX}/openai-api-key"
 STATE_FILE="${SCRIPT_DIR}/.state.env"
 
 require_command() {

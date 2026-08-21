@@ -43,6 +43,19 @@ export function useEmployerSubmissionReaction() {
   });
 }
 
+export function useAnalyzeSubmission() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ submissionId, force = false }: { submissionId: string; force?: boolean }) =>
+      hiringService.analyzeSubmission(submissionId, force),
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: ["employer", "submissions", variables.submissionId] });
+      void queryClient.invalidateQueries({ queryKey: ["employer", "submissions"] });
+      void queryClient.invalidateQueries({ queryKey: matchKeys.employer });
+    },
+  });
+}
+
 export function useRequestInterview() {
   const queryClient = useQueryClient();
   return useMutation({

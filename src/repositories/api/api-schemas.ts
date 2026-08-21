@@ -17,6 +17,30 @@ const apiMediaAssetSchema = z.object({
   created_at: z.string().nullable().optional(),
 });
 
+export const apiProjectEvaluationSchema = z.object({
+  id: z.string(),
+  submission_id: z.string(),
+  overall_score: z.number().int().min(0).max(100).nullable().optional(),
+  challenge_completion: z.number().int().min(0).max(100),
+  code_quality: z.number().int().min(0).max(100),
+  architecture: z.number().int().min(0).max(100),
+  testing: z.number().int().min(0).max(100),
+  documentation: z.number().int().min(0).max(100),
+  summary: z.string(),
+  strengths: z.array(z.string()),
+  concerns: z.array(z.string()),
+  evidence: z.array(
+    z.object({
+      category: z.string(),
+      file_path: z.string().nullable().optional(),
+      observation: z.string(),
+    }),
+  ),
+  status: z.enum(["pending", "completed", "failed"]),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+
 export const apiOpportunitySchema = z.object({
   id: z.string(),
   employer: employerSchema,
@@ -61,6 +85,7 @@ export const apiSubmissionSchema = z.object({
     .optional(),
   match_id: z.string().nullable().optional(),
   match_status: z.enum(["matched", "interview_requested", "interview_scheduled", "closed"]).nullable().optional(),
+  project_evaluation: apiProjectEvaluationSchema.nullable().optional(),
 });
 
 export const apiOpportunityListSchema = z.array(apiOpportunitySchema);
@@ -112,3 +137,4 @@ export type ApiOpportunity = z.infer<typeof apiOpportunitySchema>;
 export type ApiSubmission = z.infer<typeof apiSubmissionSchema>;
 export type ApiMatch = z.infer<typeof apiMatchSchema>;
 export type ApiMediaAsset = z.infer<typeof apiMediaAssetSchema>;
+export type ApiProjectEvaluation = z.infer<typeof apiProjectEvaluationSchema>;

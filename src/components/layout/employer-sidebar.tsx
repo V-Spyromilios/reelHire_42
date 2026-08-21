@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BarChart3, BriefcaseBusiness, LayoutDashboard, Plus, Sparkles, UsersRound } from "lucide-react";
+import { ReelHireBrand } from "@/components/branding/reelhire-brand";
 import { EmployerPrimaryActionLink } from "@/components/ui/employer-action-link";
 import { cn } from "@/lib/utils/cn";
 
@@ -20,15 +21,9 @@ export function EmployerSidebar() {
     <aside className="fixed inset-y-0 left-0 hidden w-72 border-r border-[var(--employer-line)] bg-[var(--employer-surface)]/88 p-5 backdrop-blur-xl lg:block">
       <Link
         href="/"
-        className="flex items-center gap-3 rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#6f9f2f]"
+        className="inline-flex rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#6f9f2f]"
       >
-        <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#171716] text-sm font-black text-[var(--accent)]">
-          RH
-        </span>
-        <span>
-          <span className="block text-sm font-bold">ReelHire</span>
-          <span className="block text-xs text-[var(--muted)]">Employer Studio</span>
-        </span>
+        <ReelHireBrand variant="sidebar" subtitle="Employer Studio" />
       </Link>
       <EmployerPrimaryActionLink
         href="/employer/opportunities/new"

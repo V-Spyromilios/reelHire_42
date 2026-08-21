@@ -6,6 +6,7 @@ import type {
   Match,
   Opportunity,
   OpportunityAnalytics,
+  ProjectEvaluation,
   Submission,
   MediaAsset,
 } from "@/domain/types";
@@ -58,6 +59,7 @@ export interface HiringRepository {
   getOpportunityAnalytics(opportunityId: string): Promise<OpportunityAnalytics | null>;
   getOpportunitySubmissions(opportunityId: string): Promise<Submission[]>;
   getSubmission(id: string): Promise<Submission | null>;
+  analyzeSubmission(id: string, force?: boolean): Promise<ProjectEvaluation>;
   createEmployerReaction(input: CreateEmployerReactionInput): Promise<{ reaction: EmployerReaction; match: Match | null }>;
   getEmployerMatches(): Promise<Match[]>;
   getCandidateMatches(): Promise<Match[]>;

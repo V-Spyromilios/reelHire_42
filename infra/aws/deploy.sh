@@ -29,6 +29,7 @@ require_secret "${DATABASE_URL_SECRET}"
 require_secret "${CLOUDINARY_CLOUD_NAME_SECRET}"
 require_secret "${CLOUDINARY_API_KEY_SECRET}"
 require_secret "${CLOUDINARY_API_SECRET_SECRET}"
+require_secret "${OPENAI_API_KEY_SECRET}"
 
 FRONTEND_URI="$(ecr_uri "${FRONTEND_REPO}")"
 BACKEND_URI="$(ecr_uri "${BACKEND_REPO}")"
@@ -148,6 +149,7 @@ if [[ "${TARGET}" == "all" || "${TARGET}" == "backend" ]]; then
   CLOUD_NAME_ARN="$(secret_arn "${CLOUDINARY_CLOUD_NAME_SECRET}")"
   CLOUD_KEY_ARN="$(secret_arn "${CLOUDINARY_API_KEY_SECRET}")"
   CLOUD_SECRET_ARN="$(secret_arn "${CLOUDINARY_API_SECRET_SECRET}")"
+  OPENAI_KEY_ARN="$(secret_arn "${OPENAI_API_KEY_SECRET}")"
 
   BACKEND_TASK_FILE="$(mktemp)"
   jq -n \
@@ -162,6 +164,7 @@ if [[ "${TARGET}" == "all" || "${TARGET}" == "backend" ]]; then
     --arg cloudNameArn "${CLOUD_NAME_ARN}" \
     --arg cloudKeyArn "${CLOUD_KEY_ARN}" \
     --arg cloudSecretArn "${CLOUD_SECRET_ARN}" \
+    --arg openaiKeyArn "${OPENAI_KEY_ARN}" \
     --arg cpuArchitecture "${ECS_CPU_ARCHITECTURE}" \
     '{
       family: $family,
@@ -187,7 +190,8 @@ if [[ "${TARGET}" == "all" || "${TARGET}" == "backend" ]]; then
           {name: "DATABASE_URL", valueFrom: $databaseUrlArn},
           {name: "CLOUDINARY_CLOUD_NAME", valueFrom: $cloudNameArn},
           {name: "CLOUDINARY_API_KEY", valueFrom: $cloudKeyArn},
-          {name: "CLOUDINARY_API_SECRET", valueFrom: $cloudSecretArn}
+          {name: "CLOUDINARY_API_SECRET", valueFrom: $cloudSecretArn},
+          {name: "OPENAI_API_KEY", valueFrom: $openaiKeyArn}
         ],
         logConfiguration: {
           logDriver: "awslogs",

@@ -30,20 +30,37 @@ export function VideoUploadDropzone({
   const isUploading = state === "signing" || state === "uploading";
 
   return (
-    <section className="rounded-2xl border border-[var(--employer-line,rgba(255,255,255,0.12))] bg-[var(--employer-surface,rgba(255,255,255,0.06))] p-4">
+    <section
+      className={cn(
+        "rounded-2xl border p-4",
+        tone === "candidate"
+          ? "border-[var(--candidate-line)] bg-[var(--candidate-surface)]/84"
+          : "border-[var(--employer-line,rgba(255,255,255,0.12))] bg-[var(--employer-surface,rgba(255,255,255,0.06))]",
+      )}
+    >
       <div
         className={cn(
           "relative overflow-hidden rounded-2xl border border-dashed",
-          tone === "candidate" ? "border-white/12 bg-white/[0.04]" : "border-black/15 bg-white/55",
+          tone === "candidate" ? "border-[var(--candidate-line)] bg-[var(--candidate-surface-2)]/58" : "border-black/15 bg-white/55",
         )}
       >
         {previewUrl ? (
-          <video src={previewUrl} controls playsInline className="aspect-video w-full bg-black object-cover" />
+          <video
+            src={previewUrl}
+            controls
+            playsInline
+            className={cn("aspect-video w-full object-cover", tone === "candidate" ? "bg-[var(--candidate-surface-2)]" : "bg-black")}
+          />
         ) : (
           <label className="flex min-h-56 cursor-pointer flex-col items-center justify-center px-6 py-10 text-center">
             <Upload className="h-8 w-8 text-[var(--accent)]" />
             <span className="mt-4 text-lg font-black">{label}</span>
-            <span className="mt-2 max-w-sm text-sm leading-6 text-[var(--muted,rgba(255,255,255,0.58))]">
+            <span
+              className={cn(
+                "mt-2 max-w-sm text-sm leading-6",
+                tone === "candidate" ? "text-[var(--candidate-muted)]" : "text-[var(--muted,rgba(255,255,255,0.58))]",
+              )}
+            >
               {description}
             </span>
             <input
@@ -60,10 +77,10 @@ export function VideoUploadDropzone({
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-sm font-bold">{file.name}</p>
-            <p className="mt-1 text-xs text-[var(--muted,rgba(255,255,255,0.58))]">{formatBytes(file.size)}</p>
+            <p className={cn("mt-1 text-xs", tone === "candidate" ? "text-[var(--candidate-muted)]" : "text-[var(--muted,rgba(255,255,255,0.58))]")}>{formatBytes(file.size)}</p>
           </div>
           <div className="flex items-center gap-2">
-            <label className="inline-flex h-10 cursor-pointer items-center justify-center rounded-full border border-current/15 px-4 text-sm font-bold transition hover:bg-black/5">
+            <label className={cn("inline-flex h-10 cursor-pointer items-center justify-center rounded-full border border-current/15 px-4 text-sm font-bold transition", tone === "candidate" ? "hover:bg-[var(--candidate-surface-2)]" : "hover:bg-black/5")}>
               Replace
               <input
                 type="file"
@@ -77,7 +94,10 @@ export function VideoUploadDropzone({
               type="button"
               disabled={isUploading}
               onClick={() => onFile(null)}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-current/15 transition hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] disabled:opacity-50"
+              className={cn(
+                "inline-flex h-10 w-10 items-center justify-center rounded-full border border-current/15 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] disabled:opacity-50",
+                tone === "candidate" ? "hover:bg-[var(--candidate-surface-2)]" : "hover:bg-black/5",
+              )}
               aria-label="Remove video"
             >
               <X className="h-4 w-4" />
@@ -92,7 +112,7 @@ export function VideoUploadDropzone({
             <span>{state === "signing" ? "Preparing upload" : "Uploading video"}</span>
             <span>{progress}%</span>
           </div>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-black/10">
+          <div className={cn("mt-2 h-2 overflow-hidden rounded-full", tone === "candidate" ? "bg-[var(--candidate-surface-2)]" : "bg-black/10")}>
             <div className="h-full rounded-full bg-[var(--accent)] transition-[width]" style={{ width: `${progress}%` }} />
           </div>
         </div>

@@ -4,9 +4,9 @@ export default async function CandidateChallengeDetailPage({ params }: { params:
   const { id } = await params;
   return (
     <main className="mx-auto min-h-dvh max-w-[430px] px-5 pb-28 pt-8">
-      <p className="text-sm font-semibold text-[var(--accent)]">Challenge brief</p>
+      <p className="text-sm font-semibold text-[var(--candidate-info)]">Challenge brief</p>
       <h1 className="mt-2 text-3xl font-black">Project workspace</h1>
-      <p className="mt-3 text-sm leading-6 text-white/62">
+      <p className="mt-3 text-sm leading-6 text-[#f5f1e8]/62">
         This route is reserved for the full challenge workspace. The service layer already supports loading opportunity
         detail for {id}.
       </p>

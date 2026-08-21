@@ -38,6 +38,19 @@ export default async function EmployerMatchesPage() {
                 {new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(new Date(match.createdAt))}
               </p>
             </div>
+            <div className="mt-5 rounded-xl border border-[var(--employer-line)] bg-white/70 p-4">
+              <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--muted)]">Project Evaluation</p>
+              {submission?.projectEvaluation?.status === "completed" ? (
+                <>
+                  <p className="mt-2 text-lg font-black">{submission.projectEvaluation.overallScore ?? "-"} / 100</p>
+                  <p className="mt-1 text-sm leading-6 text-[var(--muted)]">
+                    {submission.projectEvaluation.strengths[0] ?? submission.projectEvaluation.summary}
+                  </p>
+                </>
+              ) : (
+                <p className="mt-2 text-sm font-semibold text-[var(--muted)]">Project evaluation pending</p>
+              )}
+            </div>
             <div className="mt-5 flex flex-wrap gap-3">
               <Link
                 href={`/employer/submissions/${match.submissionId}`}

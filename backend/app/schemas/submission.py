@@ -5,6 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
 
 from app.schemas.media import MediaAsset, MediaAssetResponse
 from app.schemas.reaction import EmployerReactionResponse
+from app.schemas.evaluation import ProjectEvaluationResponse
 
 
 class SubmissionStatus(StrEnum):
@@ -58,3 +59,4 @@ class SubmissionResponse(BaseModel):
     employer_reaction: EmployerReactionResponse | None = None
     match_id: str | None = None
     match_status: str | None = None
+    project_evaluation: ProjectEvaluationResponse | None = None

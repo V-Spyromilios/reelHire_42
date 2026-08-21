@@ -1,6 +1,6 @@
 # ReelHire Current State
 
-Last verified: 2026-08-21 11:06 CEST.
+Last verified: 2026-08-21 13:10 CEST.
 
 ## Product
 
@@ -88,6 +88,7 @@ Implemented FastAPI endpoints:
 - `GET /api/employer/submissions/{submission_id}`
 - `GET /api/candidate/submissions`
 - `GET /api/employer/opportunities/{opportunity_id}/submissions`
+- `POST /api/employer/submissions/{submission_id}/analyze`
 - `POST /api/employer/submissions/{submission_id}/reaction`
 - `GET /api/employer/matches`
 - `GET /api/candidate/matches`
@@ -98,16 +99,18 @@ Current API-mode repository behavior:
 - Employer submission accept/pass is implemented against FastAPI.
 - Matches are persisted and returned separately for employer and candidate identities.
 - Interview request is implemented as a small persisted match status transition to `interview_requested`.
+- Employer submission repository evaluation is implemented against FastAPI. It validates and shallow-clones public GitHub repositories, inspects bounded source evidence, calls the configured evaluator, calculates the weighted score server-side, persists one `ProjectEvaluation` per submission, and returns existing completed evaluations unless `force=true`.
 
 ## Database
 
-Current Alembic head: `20260821_0003`.
+Current Alembic head: `20260821_0004`.
 
 Migrations:
 
 - `20260820_0001_initial_video_upload_schema.py`
 - `20260820_0002_candidate_reaction_withdrawal.py`
 - `20260821_0003_employer_reactions_matches.py`
+- `20260821_0004_project_evaluations.py`
 
 Important models:
 
@@ -116,6 +119,7 @@ Important models:
 - `submissions`: one row per `candidate_id + opportunity_id`, with GitHub URL, explanation-video metadata, and status. It has an FK to `opportunities` with database cascade, but service-level employer deletion prevents deletion if submissions exist.
 - `employer_reactions`: one current employer decision per `employer_id + submission_id`, with `reaction`, `reacted_at`, and `updated_at`.
 - `matches`: persisted mutual matches with opportunity, submission, candidate, employer, created timestamp, and status.
+- `project_evaluations`: one current repository evaluation per submission. Stores dimension scores, backend-calculated overall score, summary, strengths, concerns, concrete file-backed evidence, status, and timestamps. Repository source code is not persisted.
 
 Status semantics:
 
@@ -158,14 +162,16 @@ Working from current code:
 - Dashboard Pitch Performance uses the most recent active opportunity. If none exist, it shows an intentional empty state.
 - Active Opportunities shows current published employer opportunities only, with an empty state when none exist.
 - Employer submission lists and detail pages are backed by real submissions.
-- Employer submission detail shows the explanation video with native controls, GitHub URL, candidate and challenge details, honest pending Project Analysis state, and real Pass / Accept Candidate actions.
+- Employer submission detail shows the explanation video with native controls, GitHub URL, candidate and challenge details, real Project Evaluation action/results, and real Pass / Accept Candidate actions.
+- Project Evaluation evaluates only the submitted repository artifact against the employer challenge. It must not evaluate the human candidate, infer personal traits, or make hire/reject recommendations.
 - Employer accepting a valid submission creates a persisted Match and shows a restrained Match success state.
-- Employer Matches uses persisted API matches in API mode and links back to the project/submission and GitHub repository.
+- Employer Matches uses persisted API matches in API mode, links back to the project/submission and GitHub repository, and shows a compact Project Evaluation summary when one exists.
 
 Scaffolded or incomplete:
 
-- Project Analysis is represented in frontend domain/mocks, but no Databricks-backed production analysis is implemented.
-- Rich project analysis evidence remains mock/scaffolded until Databricks integration exists.
+- Video/transcript evaluation is not implemented.
+- Databricks integration is not implemented. The current evaluator boundary can later be replaced by a Databricks-backed evaluator.
+- Production repository evaluation is deployed and the backend task injects `OPENAI_API_KEY` from AWS Secrets Manager. The only current production submission points at `https://github.com/alexmorgan-dev/incident-queue`, which is not a public/reachable repository, so the evaluator endpoint correctly stops at repository clone with HTTP 502 instead of fabricating an evaluation.
 
 ## Media
 
@@ -191,17 +197,19 @@ Verified AWS state on 2026-08-21:
 - ECS cluster: `reelhire-cluster`.
 - Frontend service: `reelhire-frontend-service`, ACTIVE, desired 1, running 1.
 - Backend service: `reelhire-backend-service`, ACTIVE, desired 1, running 1.
-- Frontend task definition: `reelhire-frontend:11`, X86_64/Linux, image tag `a6e5d646dfa0`.
-- Backend task definition: `reelhire-backend:7`, X86_64/Linux, image tag `a6e5d646dfa0`.
+- Frontend task definition: `reelhire-frontend:17`, X86_64/Linux, image tag `98866d178f27`.
+- Backend task definition: `reelhire-backend:12`, X86_64/Linux, image tag `98866d178f27`.
 - ECR repositories: `reelhire-frontend`, `reelhire-backend`.
 - RDS: `reelhire-db`, PostgreSQL 18.3, `db.t4g.micro`, available, not publicly accessible.
 - ALB: `reelhire-alb`, internet-facing application load balancer, active.
 - Target groups: frontend port 3000 health path `/`, backend port 8000 health path `/api/health`; both had healthy targets.
 - Backend task secrets are injected by name: `DATABASE_URL`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`.
+- Backend task definitions inject `OPENAI_API_KEY` from secret `reelhire/openai-api-key` for Project Evaluation.
 
 Verified public endpoints:
 
 - `GET /` returned HTTP 200 HTML.
+- `GET /branding/reelhire-logo.png` returned HTTP 200 with `Content-Type: image/png`.
 - `GET /api/health` returned HTTP 200 with `{"status":"ok"}`.
 - `GET /api/opportunities/feed` returned HTTP 200 and `[]` in production at verification time because the current temporary candidate has accepted the only active opportunity.
 - `GET /api/opportunities` returned HTTP 200 and one published opportunity at verification time.
@@ -241,6 +249,12 @@ Cloudinary production secrets helper:
 
 ```bash
 AWS_REGION=eu-central-1 ./infra/aws/put-cloudinary-secrets.sh
+```
+
+OpenAI evaluator secret helper:
+
+```bash
+AWS_REGION=eu-central-1 ./infra/aws/put-openai-secret.sh
 ```
 
 Rollback:
@@ -301,12 +315,14 @@ Notes from verification:
 - Candidate accepted challenge plus submitted project plus employer accepted decision creates a persisted Match.
 - Employer pass decisions do not create a Match.
 - Once a Match exists, accept-to-pass is blocked; use explicit close/archive semantics in a future iteration instead of deleting match history.
+- Project Evaluation uses a fixed repository rubric: Challenge Completion 30%, Code Quality 25%, Architecture / Design 20%, Testing / Correctness 15%, Documentation 10%. The backend clamps dimension scores and calculates the overall score.
 
 ## Known Limitations / TODO
 
 - No authentication; temporary candidate/employer identities are hardcoded in backend dependency abstractions.
 - No HTTPS/custom domain yet; ALB is currently HTTP.
-- Project Analysis is not connected to Databricks or a real analyzer.
+- Project Evaluation requires a submitted public GitHub repository. The only current production submission uses a non-existent/private demo GitHub URL, so production E2E evaluation is blocked until a real public repository is submitted.
+- Video/transcript evaluation is not implemented.
 - Candidate submission and employer review-to-match now work in API mode.
 - Analytics are derived from current stored reaction rows and submissions; there is no separate immutable analytics-event table.
 - Production currently has one published opportunity, one submitted challenge, and one persisted match for the temporary candidate, so production Discover returns an empty feed until another opportunity is created.
@@ -315,9 +331,10 @@ Notes from verification:
 
 Validation performed on 2026-08-21:
 
-- `git status --short --branch`: clean `main`.
+- `git status --short --branch`: `main` with local repository-evaluation/logo/deployment-script changes pending.
 - Local PostgreSQL `SELECT 1`: succeeded.
-- Local Alembic current: `20260821_0003 (head)`.
+- Local Alembic current: `20260821_0004 (head)`.
+- Local Project Evaluation validation: repository inspector/evaluation service tests passed.
 - Local FastAPI `GET /api/health`: HTTP 200.
 - Local FastAPI `GET /api/opportunities/feed`: HTTP 200.
 - `AWS_REGION=eu-central-1 ./infra/aws/status.sh`: services running and public health/feed checks passed.
@@ -331,8 +348,22 @@ Validation performed on 2026-08-21:
 - Production `POST /api/employer/submissions/{id}/reaction` with `accepted` created persisted match `match-2ab49129071f`.
 - Production duplicate accept returned the same match; accept-to-pass returned HTTP 409 and match count stayed 1.
 - Browser verification confirmed employer submission detail, employer matches, candidate matches, and dashboard match count render the persisted match.
+- AWS deployment after Project Evaluation fix completed with frontend `reelhire-frontend:13` and backend `reelhire-backend:8`.
+- AWS deployment after the frontend standalone public-asset fix completed with frontend `reelhire-frontend:14` and backend `reelhire-backend:9`.
+- Public ALB `GET /branding/reelhire-logo.png`: HTTP 200, `Content-Type: image/png`.
+- AWS deployment after the shared frontend logo branding cleanup completed with frontend `reelhire-frontend:15` and backend `reelhire-backend:10`.
+- Production landing and employer sidebar use the shared ReelHire logo asset; the old manual `RH` badge branding is removed from the employer sidebar while `Employer Studio` remains visible.
+- AWS deployment after the scoped landing/candidate palette refresh completed with frontend `reelhire-frontend:16` and backend `reelhire-backend:11`.
+- Production landing uses the warm editorial `landing-theme`; candidate routes use the scoped coral/dusty-blue `candidate-theme`; employer dashboard remains on the existing `employer-theme`.
+- AWS deployment after the deeper candidate dark-theme correction completed with frontend `reelhire-frontend:17` and backend `reelhire-backend:12` on 2026-08-21 13:10 CEST.
+- Production candidate routes (`/candidate/feed`, `/candidate/challenges`, `/candidate/matches`, `/candidate/profile`) return HTTP 200 and use the layered warm-charcoal `candidate-theme`; the empty feed no longer renders as a flat black page.
+- Production employer dashboard returns HTTP 200 and remains scoped to `employer-theme`; backend health through the ALB remains HTTP 200.
+- Migration ECS task exited with code 0 and production is on `20260821_0004`.
+- Backend ECS task definition secret names include `DATABASE_URL`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, and `OPENAI_API_KEY`.
+- Production `POST /api/employer/submissions/sub-ae0d2eafedfe/analyze` reached repository cloning and returned HTTP 502 because `https://github.com/alexmorgan-dev/incident-queue` is not public/reachable. It no longer returns missing OpenAI configuration.
+- Production submission detail still has `project_evaluation: null`; no fake evaluation was persisted after the clone failure.
 - `bash -n infra/aws/*.sh`: passed.
 - `npm run lint`: passed.
-- `npm run build`: passed.
 - `npm run typecheck`: passed.
-- `cd backend && .venv/bin/pytest`: 38 passed.
+- `npm run build`: passed.
+- `cd backend && .venv/bin/pytest`: passed, 48 tests.

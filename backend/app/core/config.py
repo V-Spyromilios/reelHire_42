@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     cloudinary_cloud_name: str = ""
     cloudinary_api_key: str = ""
     cloudinary_api_secret: str = ""
+    openai_api_key: str = ""
+    openai_model: str = "gpt-4o-mini"
     frontend_origin: str = "http://localhost:3000"
 
     model_config = SettingsConfigDict(

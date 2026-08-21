@@ -31,7 +31,7 @@ export function CandidateChallenges() {
   return (
     <main className="mx-auto min-h-dvh max-w-[430px] px-5 pb-28 pt-8">
       <h1 className="text-3xl font-black">Challenges</h1>
-      <p className="mt-2 text-sm leading-6 text-white/58">Accepted projects waiting for your best work.</p>
+      <p className="mt-2 text-sm leading-6 text-[#f5f1e8]/58">Accepted projects waiting for your best work.</p>
       {isError ? (
         <p className="mt-5 rounded-2xl border border-[#f5b6a8]/24 bg-[#8a2d1f]/18 px-4 py-3 text-sm font-semibold text-[#ffe8e2]">
           Could not load your challenges. Try again.
@@ -39,14 +39,14 @@ export function CandidateChallenges() {
       ) : null}
       <div className="mt-7 space-y-4">
         {(data ?? []).map((challenge) => (
-          <article key={challenge.id} className="relative rounded-[24px] border border-white/10 bg-white/[0.06] p-4">
+          <article key={challenge.id} className="relative rounded-[24px] border border-[var(--candidate-line)] bg-[var(--candidate-surface)]/84 p-4 shadow-[0_18px_54px_rgba(0,0,0,0.14)]">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-sm font-semibold text-[var(--accent)]">{challenge.employer.companyName}</p>
+                <p className="text-sm font-semibold text-[var(--candidate-info)]">{challenge.employer.companyName}</p>
                 <h2 className="mt-1 text-xl font-black">{challenge.roleTitle}</h2>
               </div>
               <div className="flex items-center gap-2">
-                <Badge className="text-white">{challenge.challengeStatus}</Badge>
+                <Badge className="text-[#f5f1e8]">{challenge.challengeStatus}</Badge>
                 <button
                   type="button"
                   aria-label={`Open actions for ${challenge.roleTitle}`}
@@ -54,24 +54,24 @@ export function CandidateChallenges() {
                     setRemoveError(null);
                     setMenuOpenId((current) => (current === challenge.id ? null : challenge.id));
                   }}
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-white/70 transition hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--candidate-line)] bg-[var(--candidate-surface-2)]/72 text-[var(--candidate-muted)] transition hover:bg-[var(--candidate-surface-2)] hover:text-[var(--candidate-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
                 >
                   <MoreHorizontal className="h-4 w-4" />
                 </button>
               </div>
             </div>
             {menuOpenId === challenge.id ? (
-              <div className="absolute right-4 top-14 z-20 w-48 overflow-hidden rounded-2xl border border-white/10 bg-[#111311]/95 p-1 text-sm shadow-2xl backdrop-blur-md">
+              <div className="absolute right-4 top-14 z-20 w-48 overflow-hidden rounded-2xl border border-[var(--candidate-line)] bg-[var(--candidate-surface-2)]/95 p-1 text-sm shadow-2xl backdrop-blur-md">
                 <Link
                   href={`/candidate/challenges/${challenge.id}`}
-                  className="block rounded-xl px-3 py-2 font-semibold text-white/76 transition hover:bg-white/8 hover:text-white"
+                  className="block rounded-xl px-3 py-2 font-semibold text-[#f5f1e8]/76 transition hover:bg-[#f5f1e8]/8 hover:text-[#f5f1e8]"
                 >
                   View Challenge
                 </Link>
                 {challenge.challengeStatus !== "submitted" && challenge.challengeStatus !== "matched" ? (
                   <Link
                     href={`/candidate/submit/${challenge.id}`}
-                    className="block rounded-xl px-3 py-2 font-semibold text-white/76 transition hover:bg-white/8 hover:text-white"
+                    className="block rounded-xl px-3 py-2 font-semibold text-[#f5f1e8]/76 transition hover:bg-[#f5f1e8]/8 hover:text-[#f5f1e8]"
                   >
                     Submit Solution
                   </Link>
@@ -89,9 +89,9 @@ export function CandidateChallenges() {
                 </button>
               </div>
             ) : null}
-            <p className="mt-3 text-sm leading-6 text-white/62">{challenge.challengeTitle}</p>
-            <div className="mt-4 flex items-center gap-2 text-xs text-white/52">
-              <CalendarClock className="h-4 w-4" />
+            <p className="mt-3 text-sm leading-6 text-[#f5f1e8]/62">{challenge.challengeTitle}</p>
+            <div className="mt-4 flex items-center gap-2 text-xs text-[#f5f1e8]/52">
+              <CalendarClock className="h-4 w-4 text-[var(--candidate-info)]" />
               {challenge.deadline ? new Date(challenge.deadline).toLocaleDateString() : "No fixed deadline"}
             </div>
             {challenge.challengeStatus !== "submitted" && challenge.challengeStatus !== "matched" ? (
@@ -106,26 +106,26 @@ export function CandidateChallenges() {
           </article>
         ))}
         {!data?.length ? (
-          <div className="rounded-[24px] border border-white/10 bg-white/[0.06] p-6 text-center">
+          <div className="rounded-[24px] border border-[var(--candidate-line)] bg-[var(--candidate-surface)]/78 p-6 text-center">
             <h2 className="text-lg font-bold">No accepted challenges yet</h2>
-            <p className="mt-2 text-sm text-white/56">Find one in Discover when you are ready.</p>
+            <p className="mt-2 text-sm text-[#f5f1e8]/56">Find one in Discover when you are ready.</p>
           </div>
         ) : null}
       </div>
       {challengeToRemove ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/62 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#1b1a18]/66 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] backdrop-blur-sm">
           <section
             role="dialog"
             aria-modal="true"
             aria-labelledby="remove-challenge-title"
-            className="w-full max-w-[430px] rounded-[28px] border border-white/12 bg-[#101210] p-5 shadow-[0_28px_90px_rgba(0,0,0,0.6)]"
+            className="w-full max-w-[430px] rounded-[28px] border border-[var(--candidate-line)] bg-[var(--candidate-surface)] p-5 shadow-[0_28px_90px_rgba(0,0,0,0.46)]"
           >
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 id="remove-challenge-title" className="text-xl font-black">
                   Remove this challenge?
                 </h2>
-                <p className="mt-2 text-sm font-semibold text-[var(--accent)]">
+                <p className="mt-2 text-sm font-semibold text-[var(--candidate-info)]">
                   {challengeToRemove.roleTitle} - {challengeToRemove.employer.companyName}
                 </p>
               </div>
@@ -137,12 +137,12 @@ export function CandidateChallenges() {
                   setChallengeToRemove(null);
                   setRemoveError(null);
                 }}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-white/72 transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] disabled:opacity-50"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--candidate-line)] bg-[var(--candidate-surface-2)]/72 text-[var(--candidate-muted)] transition hover:bg-[var(--candidate-surface-2)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] disabled:opacity-50"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <p className="mt-4 text-sm leading-6 text-white/64">
+            <p className="mt-4 text-sm leading-6 text-[#f5f1e8]/64">
               This will remove it from your accepted challenges. You can discover it again later if the opportunity is
               still active.
             </p>
@@ -155,7 +155,7 @@ export function CandidateChallenges() {
                   setChallengeToRemove(null);
                   setRemoveError(null);
                 }}
-                className="h-11 rounded-full border border-white/10 bg-white/[0.06] text-sm font-bold text-white/72 transition hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] disabled:opacity-50"
+                className="h-11 rounded-full border border-[var(--candidate-line)] bg-[var(--candidate-surface-2)]/70 text-sm font-bold text-[var(--candidate-muted)] transition hover:bg-[var(--candidate-surface-2)] hover:text-[var(--candidate-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] disabled:opacity-50"
               >
                 Cancel
               </button>

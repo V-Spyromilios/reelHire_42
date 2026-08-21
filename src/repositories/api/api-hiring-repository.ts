@@ -5,6 +5,7 @@ import type {
   Match,
   Opportunity,
   OpportunityAnalytics,
+  ProjectEvaluation,
   Submission,
 } from "@/domain/types";
 import { ApiError, apiRequest } from "@/lib/api/client";
@@ -23,11 +24,13 @@ import {
   apiOpportunityAnalyticsSchema,
   apiOpportunityListSchema,
   apiOpportunitySchema,
+  apiProjectEvaluationSchema,
   apiSubmissionListSchema,
   apiSubmissionSchema,
   mapApiMediaAsset,
   type ApiMatch,
   type ApiOpportunity,
+  type ApiProjectEvaluation,
   type ApiSubmission,
 } from "./api-schemas";
 
@@ -66,6 +69,31 @@ function mapSubmission(item: ApiSubmission): Submission {
     employerReaction: item.employer_reaction ?? undefined,
     matchId: item.match_id ?? undefined,
     matchStatus: item.match_status ?? undefined,
+    projectEvaluation: item.project_evaluation ? mapProjectEvaluation(item.project_evaluation) : undefined,
+  };
+}
+
+function mapProjectEvaluation(item: ApiProjectEvaluation): ProjectEvaluation {
+  return {
+    id: item.id,
+    submissionId: item.submission_id,
+    overallScore: item.overall_score ?? undefined,
+    challengeCompletion: item.challenge_completion,
+    codeQuality: item.code_quality,
+    architecture: item.architecture,
+    testing: item.testing,
+    documentation: item.documentation,
+    summary: item.summary,
+    strengths: item.strengths,
+    concerns: item.concerns,
+    evidence: item.evidence.map((evidence) => ({
+      category: evidence.category,
+      filePath: evidence.file_path ?? undefined,
+      observation: evidence.observation,
+    })),
+    status: item.status,
+    createdAt: item.created_at,
+    updatedAt: item.updated_at,
   };
 }
 
@@ -210,6 +238,14 @@ export class ApiHiringRepository implements HiringRepository {
       if (error instanceof ApiError && error.status === 404) return null;
       throw error;
     }
+  }
+
+  async analyzeSubmission(id: string, force = false): Promise<ProjectEvaluation> {
+    const query = force ? "?force=true" : "";
+    const item = await apiRequest(`/api/employer/submissions/${id}/analyze${query}`, apiProjectEvaluationSchema, {
+      method: "POST",
+    });
+    return mapProjectEvaluation(item);
   }
 
   async createEmployerReaction(input: CreateEmployerReactionInput): Promise<{ reaction: EmployerReaction; match: Match | null }> {

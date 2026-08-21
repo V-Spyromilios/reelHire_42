@@ -65,6 +65,10 @@ class HiringService {
     return this.repository.getSubmission(id);
   }
 
+  analyzeSubmission(id: string, force = false) {
+    return this.repository.analyzeSubmission(id, force);
+  }
+
   reactToSubmission(submissionId: string, reaction: EmployerReactionKind) {
     return this.repository.createEmployerReaction({
       employerId: currentEmployerId,

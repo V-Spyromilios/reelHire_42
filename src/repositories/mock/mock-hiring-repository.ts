@@ -3,6 +3,8 @@ import type {
   EmployerReaction,
   Match,
   Opportunity,
+  ProjectAnalysis,
+  ProjectEvaluation,
   Submission,
 } from "@/domain/types";
 import {
@@ -33,6 +35,49 @@ const mutableSubmissions: Submission[] = [...submissions];
 const mutableMatches: Match[] = [...matches];
 const mutableOpportunities: Opportunity[] = [...opportunities];
 const mutableEmployerReactions: EmployerReaction[] = [];
+
+function evaluationFromAnalysis(submission: Submission, analysis?: ProjectAnalysis): ProjectEvaluation {
+  const source = analysis ?? {
+    overallScore: 76,
+    codeQuality: 78,
+    architecture: 74,
+    testing: 58,
+    documentation: 81,
+    summary: "The repository addresses the challenge with a readable implementation and clear notes. Automated test evidence is limited in the inspected files.",
+    strengths: ["Readable structure", "Challenge intent is documented"],
+    concerns: ["Test coverage is light"],
+    evidence: [
+      {
+        label: "Documentation",
+        file: "README.md",
+        lines: "1-42",
+        note: "README describes the implementation scope and trade-offs.",
+      },
+    ],
+  };
+
+  return {
+    id: `pe-${submission.id}`,
+    submissionId: submission.id,
+    overallScore: source.overallScore,
+    challengeCompletion: source.overallScore ?? source.codeQuality,
+    codeQuality: source.codeQuality,
+    architecture: source.architecture,
+    testing: source.testing,
+    documentation: source.documentation,
+    summary: source.summary,
+    strengths: source.strengths,
+    concerns: source.concerns,
+    evidence: source.evidence.map((item) => ({
+      category: item.label,
+      filePath: item.file,
+      observation: item.note,
+    })),
+    status: "completed",
+    createdAt: submission.submittedAt,
+    updatedAt: new Date().toISOString(),
+  };
+}
 
 export class MockHiringRepository implements HiringRepository {
   async getOpportunitiesFeed() {
@@ -183,6 +228,17 @@ export class MockHiringRepository implements HiringRepository {
   async getSubmission(id: string) {
     await wait();
     return mutableSubmissions.find((submission) => submission.id === id) ?? null;
+  }
+
+  async analyzeSubmission(id: string) {
+    await wait(800);
+    const submission = mutableSubmissions.find((item) => item.id === id);
+    if (!submission) {
+      throw new Error("Submission not found.");
+    }
+    const evaluation = evaluationFromAnalysis(submission, submission.analysis);
+    submission.projectEvaluation = evaluation;
+    return evaluation;
   }
 
   async createEmployerReaction(input: CreateEmployerReactionInput) {

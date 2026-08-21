@@ -2,14 +2,20 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_session
+from app.core.config import get_settings, Settings
 from app.dependencies.identity import CandidateIdentity, EmployerIdentity, get_current_candidate, get_current_employer
+from app.repositories.evaluation_repository import ProjectEvaluationRepository
 from app.repositories.match_repository import MatchRepository
 from app.repositories.opportunity_repository import OpportunityRepository
 from app.repositories.submission_repository import SubmissionRepository
+from app.schemas.evaluation import ProjectEvaluationResponse
 from app.schemas.match import EmployerSubmissionReactionResponse, MatchResponse
 from app.schemas.reaction import EmployerReactionRequest
 from app.schemas.submission import CreateSubmissionRequest, SubmissionResponse
 from app.services.match_service import MatchService
+from app.services.project_evaluation_service import ProjectEvaluationService
+from app.services.project_evaluator import LLMProjectEvaluator
+from app.services.repository_inspector import GitHubRepositoryInspector
 from app.services.submission_service import SubmissionService
 
 router = APIRouter(prefix="/api", tags=["submissions"])
@@ -26,6 +32,7 @@ def submission_service(
         candidate,
         employer,
         MatchRepository(session),
+        ProjectEvaluationRepository(session),
     )
 
 
@@ -40,6 +47,21 @@ def match_service(
         OpportunityRepository(session),
         employer,
         candidate,
+    )
+
+
+def project_evaluation_service(
+    session: AsyncSession = Depends(get_session),
+    employer: EmployerIdentity = Depends(get_current_employer),
+    settings: Settings = Depends(get_settings),
+) -> ProjectEvaluationService:
+    return ProjectEvaluationService(
+        ProjectEvaluationRepository(session),
+        SubmissionRepository(session),
+        OpportunityRepository(session),
+        employer,
+        GitHubRepositoryInspector(),
+        LLMProjectEvaluator(settings),
     )
 
 
@@ -65,6 +87,18 @@ async def get_employer_submission(
     service: SubmissionService = Depends(submission_service),
 ) -> SubmissionResponse:
     return await service.get_employer_submission(submission_id)
+
+
+@router.post("/employer/submissions/{submission_id}/analyze", response_model=ProjectEvaluationResponse)
+async def analyze_employer_submission(
+    submission_id: str,
+    force: bool = False,
+    session: AsyncSession = Depends(get_session),
+    service: ProjectEvaluationService = Depends(project_evaluation_service),
+) -> ProjectEvaluationResponse:
+    response = await service.analyze_submission(submission_id, force=force)
+    await session.commit()
+    return response
 
 
 @router.get("/candidate/submissions", response_model=list[SubmissionResponse])

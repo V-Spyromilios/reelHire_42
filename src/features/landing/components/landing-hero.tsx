@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowRight, BriefcaseBusiness, Play, Trophy } from "lucide-react";
 import { motion, useMotionValue, useReducedMotion, useSpring, useTransform } from "motion/react";
 import { useEffect, useState } from "react";
+import { ReelHireBrand } from "@/components/branding/reelhire-brand";
 import type { Opportunity } from "@/domain/types";
 
 export function LandingHero({ opportunities }: { opportunities: Opportunity[] }) {
@@ -26,7 +27,7 @@ export function LandingHero({ opportunities }: { opportunities: Opportunity[] })
   }, [opportunities.length, reducedMotion]);
 
   return (
-    <main className="min-h-dvh overflow-hidden bg-[#050606] text-[#f4f1e8]">
+    <main className="landing-theme min-h-dvh overflow-hidden bg-[var(--landing-bg)] text-[var(--landing-text)]">
       <section
         className="relative flex min-h-dvh items-center px-5 py-8 sm:px-8 lg:px-14"
         onPointerMove={(event) => {
@@ -40,17 +41,17 @@ export function LandingHero({ opportunities }: { opportunities: Opportunity[] })
           pointerY.set(0);
         }}
       >
-        <div aria-hidden className="video-gradient absolute inset-0" />
+        <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_20%_16%,rgba(var(--accent-rgb),0.14),transparent_28%),radial-gradient(circle_at_78%_18%,rgba(var(--candidate-info-rgb),0.16),transparent_24%)]" />
         <video
           aria-hidden
           autoPlay
           muted
           loop
           playsInline
-          className="absolute inset-0 h-full w-full object-cover opacity-24 mix-blend-screen"
+          className="absolute inset-0 h-full w-full object-cover opacity-[0.16] mix-blend-multiply"
           src={active?.videoUrl ?? "https://videos.pexels.com/video-files/3195394/3195394-uhd_2560_1440_25fps.mp4"}
         />
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,6,6,0.94),rgba(5,6,6,0.58)_48%,rgba(5,6,6,0.9))]" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(245,241,232,0.96),rgba(245,241,232,0.88)_48%,rgba(34,34,34,0.86))]" />
         <div className="relative z-10 grid w-full gap-10 lg:grid-cols-[minmax(0,1fr)_410px] lg:items-end">
           <motion.div
             initial={reducedMotion ? false : { opacity: 0, y: 18 }}
@@ -58,20 +59,9 @@ export function LandingHero({ opportunities }: { opportunities: Opportunity[] })
             transition={{ duration: 0.34, ease: "easeOut" }}
             className="max-w-4xl"
           >
-            <Link href="/" className="mb-12 inline-flex items-center gap-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--accent)]">
-              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f4f1e8] text-sm font-black text-black">
-                RH
-              </span>
-              <span className="text-sm font-semibold tracking-wide text-[#f4f1e8]/68">ReelHire</span>
+            <Link href="/" className="mb-10 inline-flex focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--accent)] sm:mb-12">
+              <ReelHireBrand variant="hero" priority />
             </Link>
-            <motion.p
-              initial={reducedMotion ? false : { opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05, duration: 0.26 }}
-              className="mb-5 inline-flex rounded-full border border-white/12 bg-white/[0.07] px-3 py-1 text-sm font-semibold text-[var(--accent)] backdrop-blur"
-            >
-              Video-first project hiring
-            </motion.p>
             <motion.h1
               initial={reducedMotion ? false : { opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
@@ -84,7 +74,7 @@ export function LandingHero({ opportunities }: { opportunities: Opportunity[] })
               initial={reducedMotion ? false : { opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.16, duration: 0.3 }}
-              className="mt-7 max-w-2xl text-lg leading-8 text-[#dedbd2]/68"
+              className="mt-7 max-w-2xl text-lg leading-8 text-[var(--landing-muted)]/82"
             >
               Browse short role pitches, accept real project challenges, and turn proof of work into the next hiring step.
             </motion.p>
@@ -96,15 +86,15 @@ export function LandingHero({ opportunities }: { opportunities: Opportunity[] })
             >
               <Link
                 href="/candidate/feed"
-                className="inline-flex h-14 items-center justify-center gap-2 rounded-full border border-[var(--accent)]/36 bg-white/[0.08] px-6 font-bold text-[#f4f1e8] shadow-[0_18px_60px_rgba(0,0,0,0.34)] backdrop-blur transition hover:bg-white/[0.12] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--accent)]"
+                className="inline-flex h-14 items-center justify-center gap-2 rounded-full border border-[var(--accent)] bg-[var(--accent)] px-6 font-bold text-[var(--accent-ink)] shadow-[0_18px_46px_var(--accent-shadow)] transition hover:bg-[var(--accent-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--accent)]"
               >
-                <span className="h-2 w-2 rounded-full bg-[var(--accent)]" />
+                <span className="h-2 w-2 rounded-full bg-[var(--accent-ink)]/82" />
                 Find your next challenge
-                <ArrowRight className="h-5 w-5 text-[var(--accent)]" />
+                <ArrowRight className="h-5 w-5" />
               </Link>
               <Link
                 href="/employer/dashboard"
-                className="inline-flex h-14 items-center justify-center gap-2 rounded-full border border-white/14 bg-black/18 px-6 font-bold text-[#f4f1e8]/88 backdrop-blur transition hover:bg-white/[0.08] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--accent)]"
+                className="inline-flex h-14 items-center justify-center gap-2 rounded-full border border-[#222]/14 bg-[#222] px-6 font-bold text-[#fcfaf5] shadow-[0_16px_38px_rgba(34,34,34,0.18)] transition hover:bg-[#34312d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--accent)]"
               >
                 I&apos;m hiring
                 <BriefcaseBusiness className="h-5 w-5" />
@@ -153,7 +143,7 @@ export function LandingHero({ opportunities }: { opportunities: Opportunity[] })
                   <p className="mt-3 text-sm leading-6 text-[#dedbd2]/72">
                     {active?.shortDescription ?? "Build an incident-aware queue for delayed shipments."}
                   </p>
-                  <div className="mt-5 border-l border-[var(--accent)]/48 pl-4">
+                  <div className="mt-5 border-l border-[var(--accent)]/56 pl-4">
                     <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--accent)]">Challenge</p>
                     <p className="mt-1 text-sm font-bold text-[#f4f1e8]">{active?.challengeTitle ?? "Design an incident-aware job queue"}</p>
                   </div>
