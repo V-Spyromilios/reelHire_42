@@ -1,0 +1,24 @@
+{
+  "skill": {
+    "score": 85,
+    "reason": "Strong MTA and SQL overlap; Python and IHC preferred skills bridge the gap effectively"
+  },
+  "seniority": {
+    "score": 80,
+    "reason": "Exact 4-year match meets the requirement"
+  },
+  "logistics": {
+    "score": 90,
+    "reason": "Hamburg relocation is feasible given Berlin/EU openness and hybrid preference"
+  },
+  "comp": {
+    "score": 95,
+    "reason": "70k min expectation falls comfortably within the 68k-80k range"
+  },
+  "trajectory": {
+    "score": 82,
+    "reason": "Specialism deepens from consulting to in-house media agency ownership of MTA"
+  },
+  "fit": 86,
+  "flags": []
+}

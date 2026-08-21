@@ -1,0 +1,14 @@
+{
+  "job_id": 7,
+  "title": "Attribution Specialist",
+  "seniority": "mid-senior",
+  "years_required": 4,
+  "skills_required": ["MTA", "SQL", "Google Ads"],
+  "skills_preferred": ["IHC", "Python"],
+  "location": "Hamburg",
+  "remote_policy": "on-site, relocation covered",
+  "languages": ["English"],
+  "comp_min": 68000, "comp_max": 80000, "currency": "EUR",
+  "industry": "media agency",
+  "summary": "Owns multi-touch attribution across €40M media spend."
+}
