@@ -21,7 +21,8 @@
         { "name": "DATABASE_URL", "valueFrom": "REPLACED_BY_DEPLOY_SCRIPT" },
         { "name": "CLOUDINARY_CLOUD_NAME", "valueFrom": "REPLACED_BY_DEPLOY_SCRIPT" },
         { "name": "CLOUDINARY_API_KEY", "valueFrom": "REPLACED_BY_DEPLOY_SCRIPT" },
-        { "name": "CLOUDINARY_API_SECRET", "valueFrom": "REPLACED_BY_DEPLOY_SCRIPT" }
+        { "name": "CLOUDINARY_API_SECRET", "valueFrom": "REPLACED_BY_DEPLOY_SCRIPT" },
+        { "name": "OPENROUTER_API_KEY", "valueFrom": "REPLACED_BY_DEPLOY_SCRIPT" }
       ],
       "logConfiguration": {
         "logDriver": "awslogs",

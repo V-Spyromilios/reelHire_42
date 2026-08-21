@@ -29,6 +29,15 @@ require_secret "${DATABASE_URL_SECRET}"
 require_secret "${CLOUDINARY_CLOUD_NAME_SECRET}"
 require_secret "${CLOUDINARY_API_KEY_SECRET}"
 require_secret "${CLOUDINARY_API_SECRET_SECRET}"
+if [[ "${TARGET}" == "all" || "${TARGET}" == "backend" ]]; then
+  require_secret "${OPENROUTER_API_KEY_SECRET}"
+fi
+
+if [[ -n "$(git -C "${REPO_ROOT}" status --porcelain 2>/dev/null)" ]]; then
+  echo "Refusing to deploy a dirty worktree because images are tagged with the current commit SHA." >&2
+  echo "Commit the intended release before running this script." >&2
+  exit 1
+fi
 
 FRONTEND_URI="$(ecr_uri "${FRONTEND_REPO}")"
 BACKEND_URI="$(ecr_uri "${BACKEND_REPO}")"
@@ -148,6 +157,7 @@ if [[ "${TARGET}" == "all" || "${TARGET}" == "backend" ]]; then
   CLOUD_NAME_ARN="$(secret_arn "${CLOUDINARY_CLOUD_NAME_SECRET}")"
   CLOUD_KEY_ARN="$(secret_arn "${CLOUDINARY_API_KEY_SECRET}")"
   CLOUD_SECRET_ARN="$(secret_arn "${CLOUDINARY_API_SECRET_SECRET}")"
+  OPENROUTER_API_KEY_ARN="$(secret_arn "${OPENROUTER_API_KEY_SECRET}")"
 
   BACKEND_TASK_FILE="$(mktemp)"
   jq -n \
@@ -162,6 +172,7 @@ if [[ "${TARGET}" == "all" || "${TARGET}" == "backend" ]]; then
     --arg cloudNameArn "${CLOUD_NAME_ARN}" \
     --arg cloudKeyArn "${CLOUD_KEY_ARN}" \
     --arg cloudSecretArn "${CLOUD_SECRET_ARN}" \
+    --arg openrouterApiKeyArn "${OPENROUTER_API_KEY_ARN}" \
     --arg cpuArchitecture "${ECS_CPU_ARCHITECTURE}" \
     '{
       family: $family,
@@ -187,7 +198,8 @@ if [[ "${TARGET}" == "all" || "${TARGET}" == "backend" ]]; then
           {name: "DATABASE_URL", valueFrom: $databaseUrlArn},
           {name: "CLOUDINARY_CLOUD_NAME", valueFrom: $cloudNameArn},
           {name: "CLOUDINARY_API_KEY", valueFrom: $cloudKeyArn},
-          {name: "CLOUDINARY_API_SECRET", valueFrom: $cloudSecretArn}
+          {name: "CLOUDINARY_API_SECRET", valueFrom: $cloudSecretArn},
+          {name: "OPENROUTER_API_KEY", valueFrom: $openrouterApiKeyArn}
         ],
         logConfiguration: {
           logDriver: "awslogs",
@@ -243,20 +255,16 @@ create_or_update_service() {
   fi
 }
 
-if [[ "${TARGET}" == "all" || "${TARGET}" == "backend" ]]; then
-  create_or_update_service "${BACKEND_SERVICE}" "${BACKEND_TASK_DEFINITION_ARN}" "${BACKEND_TG_ARN}" "backend" "8000" "${BACKEND_SG_ID}"
-fi
-
 if [[ "${TARGET}" == "all" || "${TARGET}" == "frontend" ]]; then
   create_or_update_service "${FRONTEND_SERVICE}" "${FRONTEND_TASK_DEFINITION_ARN}" "${FRONTEND_TG_ARN}" "frontend" "3000" "${FRONTEND_SG_ID}"
+  echo "Waiting for the frontend service to stabilize..."
+  aws ecs wait services-stable --cluster "${CLUSTER_NAME}" --services "${FRONTEND_SERVICE}"
 fi
 
-echo "Waiting for ECS services to stabilize..."
 if [[ "${TARGET}" == "all" || "${TARGET}" == "backend" ]]; then
+  create_or_update_service "${BACKEND_SERVICE}" "${BACKEND_TASK_DEFINITION_ARN}" "${BACKEND_TG_ARN}" "backend" "8000" "${BACKEND_SG_ID}"
+  echo "Waiting for the backend service to stabilize..."
   aws ecs wait services-stable --cluster "${CLUSTER_NAME}" --services "${BACKEND_SERVICE}"
-fi
-if [[ "${TARGET}" == "all" || "${TARGET}" == "frontend" ]]; then
-  aws ecs wait services-stable --cluster "${CLUSTER_NAME}" --services "${FRONTEND_SERVICE}"
 fi
 
 echo "Checking public endpoints..."

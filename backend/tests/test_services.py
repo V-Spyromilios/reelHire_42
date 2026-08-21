@@ -112,6 +112,9 @@ class FakeSubmissionRepository:
     async def get_for_candidate_opportunity(self, candidate_id: str, opportunity_id: str):
         return self.item
 
+    async def get(self, submission_id: str):
+        return self.item if self.item and self.item.id == submission_id else None
+
     async def count_for_opportunity(self, opportunity_id: str):
         return self.opportunity_submission_count
 
@@ -124,6 +127,23 @@ class FakeSubmissionRepository:
         submission.updated_at = datetime.now(UTC)
         self.item = submission
         return submission
+
+    async def retry_failed_analysis(self, submission_id: str, candidate_id: str, run_id: str):
+        if (
+            not self.item
+            or self.item.id != submission_id
+            or self.item.candidate_id != candidate_id
+            or self.item.status != "analysis_failed"
+        ):
+            return None
+        self.item.status = "analysis_pending"
+        self.item.analysis = None
+        self.item.analysis_error = None
+        self.item.analysis_run_id = run_id
+        self.item.analysis_started_at = None
+        self.item.analysis_evaluated_at = None
+        self.item.updated_at = datetime.now(UTC)
+        return self.item
 
 
 class FakeCloudinaryService:
@@ -415,8 +435,76 @@ async def test_create_submission_service() -> None:
         )
     )
 
-    assert response.status == "submitted"
+    assert response.status == "analysis_pending"
     assert response.explanation_video_secure_url == "https://res.cloudinary.com/demo/video/upload/test.mp4"
+    assert submissions.item.analysis_run_id.startswith("analysis-")
+
+
+@pytest.mark.asyncio
+async def test_identical_submission_does_not_start_a_second_paid_analysis() -> None:
+    submissions = FakeSubmissionRepository()
+    opportunities = FakeOpportunityRepository()
+    opportunities.item = stored_opportunity(opportunity_id="opp-test")
+    service = SubmissionService(submissions, opportunities, CandidateIdentity())
+    payload = CreateSubmissionRequest(
+        opportunity_id="opp-test",
+        github_url="https://github.com/alexmorgan-dev/incident-queue",
+        explanation_video=media(),
+    )
+
+    first = await service.create(payload)
+    first_run_id = submissions.item.analysis_run_id
+    second = await service.create(payload)
+
+    assert second.status == "analysis_pending"
+    assert second.id == first.id
+    assert submissions.item.analysis_run_id == first_run_id
+
+
+@pytest.mark.asyncio
+async def test_failed_analysis_can_retry_without_a_new_upload() -> None:
+    submissions = FakeSubmissionRepository()
+    opportunities = FakeOpportunityRepository()
+    opportunities.item = stored_opportunity(opportunity_id="opp-test")
+    service = SubmissionService(submissions, opportunities, CandidateIdentity())
+    created = await service.create(
+        CreateSubmissionRequest(
+            opportunity_id="opp-test",
+            github_url="https://github.com/alexmorgan-dev/incident-queue",
+            explanation_video=media(),
+        )
+    )
+    original_video_id = submissions.item.explanation_video_public_id
+    submissions.item.status = "analysis_failed"
+    submissions.item.analysis_error = "Temporary provider failure."
+
+    retried = await service.retry_analysis(created.id)
+
+    assert retried.status == "analysis_pending"
+    assert submissions.item.explanation_video_public_id == original_video_id
+    assert submissions.item.analysis_error is None
+
+
+@pytest.mark.asyncio
+async def test_failed_submission_is_exposed_as_retryable_candidate_challenge() -> None:
+    submissions = FakeSubmissionRepository()
+    submissions.item = type("FailedSubmission", (), {"id": "sub-test", "status": "analysis_failed"})()
+    opportunities = FakeOpportunityRepository()
+    opportunities.item = stored_opportunity(opportunity_id="opp-test")
+    opportunities.item.created_at = datetime.now(UTC)
+    service = OpportunityService(opportunities, submissions, EmployerIdentity())
+    candidate = CandidateIdentity()
+
+    await service.react(
+        "opp-test",
+        candidate,
+        CandidateReactionRequest(reaction="accepted", watch_time_ms=1200, video_duration_ms=24000),
+    )
+
+    challenges = await service.candidate_challenges(candidate)
+
+    assert challenges[0]["challenge_status"] == "analysis_failed"
+    assert challenges[0]["submission_id"] == "sub-test"
 
 
 @pytest.mark.asyncio

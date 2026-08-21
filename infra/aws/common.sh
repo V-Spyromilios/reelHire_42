@@ -36,6 +36,7 @@ DB_PASSWORD_SECRET="${PREFIX}/db-password"
 CLOUDINARY_CLOUD_NAME_SECRET="${PREFIX}/cloudinary-cloud-name"
 CLOUDINARY_API_KEY_SECRET="${PREFIX}/cloudinary-api-key"
 CLOUDINARY_API_SECRET_SECRET="${PREFIX}/cloudinary-api-secret"
+OPENROUTER_API_KEY_SECRET="${PREFIX}/openrouter-api-key"
 STATE_FILE="${SCRIPT_DIR}/.state.env"
 
 require_command() {
@@ -61,14 +62,26 @@ put_secret_string() {
   local name="$1"
   local value="$2"
   local description="${3:-ReelHire secret}"
+  local secret_file
+  local command_status=0
+
+  secret_file="$(mktemp)"
+  trap 'rm -f "${secret_file}"' EXIT
+  chmod 600 "${secret_file}"
+  printf '%s' "${value}" > "${secret_file}"
   if [[ -n "$(secret_arn "${name}")" ]]; then
-    aws secretsmanager put-secret-value --secret-id "${name}" --secret-string "${value}" >/dev/null
+    aws secretsmanager put-secret-value \
+      --secret-id "${name}" \
+      --secret-string "file://${secret_file}" >/dev/null || command_status=$?
   else
     aws secretsmanager create-secret \
       --name "${name}" \
       --description "${description}" \
-      --secret-string "${value}" >/dev/null
+      --secret-string "file://${secret_file}" >/dev/null || command_status=$?
   fi
+  rm -f "${secret_file}"
+  trap - EXIT
+  return "${command_status}"
 }
 
 require_secret() {

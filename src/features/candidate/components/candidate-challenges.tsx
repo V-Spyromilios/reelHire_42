@@ -7,9 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { LoadingState } from "@/components/ui/state";
 import { ApiError } from "@/lib/api/client";
 import type { Opportunity } from "@/domain/types";
-import { useCandidateChallenges, useRemoveCandidateChallenge } from "@/features/candidate/hooks";
+import {
+  useCandidateChallenges,
+  useRemoveCandidateChallenge,
+  useRetrySubmissionAnalysis,
+} from "@/features/candidate/hooks";
 
-type ChallengeItem = Opportunity & { challengeStatus: string };
+type ChallengeItem = Opportunity & { challengeStatus: string; submissionId?: string };
 
 function removalErrorMessage(error: unknown) {
   if (error instanceof ApiError) {
@@ -22,6 +26,7 @@ function removalErrorMessage(error: unknown) {
 export function CandidateChallenges() {
   const { data, isLoading, isError } = useCandidateChallenges();
   const removeMutation = useRemoveCandidateChallenge();
+  const retryAnalysis = useRetrySubmissionAnalysis();
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [challengeToRemove, setChallengeToRemove] = useState<ChallengeItem | null>(null);
   const [removeError, setRemoveError] = useState<string | null>(null);
@@ -38,73 +43,97 @@ export function CandidateChallenges() {
         </p>
       ) : null}
       <div className="mt-7 space-y-4">
-        {(data ?? []).map((challenge) => (
-          <article key={challenge.id} className="relative rounded-[24px] border border-white/10 bg-white/[0.06] p-4">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-semibold text-[var(--accent)]">{challenge.employer.companyName}</p>
-                <h2 className="mt-1 text-xl font-black">{challenge.roleTitle}</h2>
+        {(data ?? []).map((challenge) => {
+          const canSubmit = challenge.challengeStatus === "in progress";
+          const isRetry = challenge.challengeStatus === "analysis_failed";
+          const submissionId = challenge.submissionId;
+          const isRetrying = retryAnalysis.isPending && retryAnalysis.variables === submissionId;
+          return (
+            <article
+              key={challenge.id}
+              className="relative rounded-[24px] border border-white/10 bg-white/[0.06] p-4"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-[var(--accent)]">{challenge.employer.companyName}</p>
+                  <h2 className="mt-1 text-xl font-black">{challenge.roleTitle}</h2>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge className="text-white">{challenge.challengeStatus.replaceAll("_", " ")}</Badge>
+                  <button
+                    type="button"
+                    aria-label={`Open actions for ${challenge.roleTitle}`}
+                    onClick={() => {
+                      setRemoveError(null);
+                      setMenuOpenId((current) => (current === challenge.id ? null : challenge.id));
+                    }}
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-white/70 transition hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Badge className="text-white">{challenge.challengeStatus}</Badge>
-                <button
-                  type="button"
-                  aria-label={`Open actions for ${challenge.roleTitle}`}
-                  onClick={() => {
-                    setRemoveError(null);
-                    setMenuOpenId((current) => (current === challenge.id ? null : challenge.id));
-                  }}
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-white/70 transition hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-            {menuOpenId === challenge.id ? (
-              <div className="absolute right-4 top-14 z-20 w-48 overflow-hidden rounded-2xl border border-white/10 bg-[#111311]/95 p-1 text-sm shadow-2xl backdrop-blur-md">
-                <Link
-                  href={`/candidate/challenges/${challenge.id}`}
-                  className="block rounded-xl px-3 py-2 font-semibold text-white/76 transition hover:bg-white/8 hover:text-white"
-                >
-                  View Challenge
-                </Link>
-                {challenge.challengeStatus !== "submitted" && challenge.challengeStatus !== "matched" ? (
+              {menuOpenId === challenge.id ? (
+                <div className="absolute right-4 top-14 z-20 w-48 overflow-hidden rounded-2xl border border-white/10 bg-[#111311]/95 p-1 text-sm shadow-2xl backdrop-blur-md">
                   <Link
-                    href={`/candidate/submit/${challenge.id}`}
+                    href={`/candidate/challenges/${challenge.id}`}
                     className="block rounded-xl px-3 py-2 font-semibold text-white/76 transition hover:bg-white/8 hover:text-white"
                   >
-                    Submit Solution
+                    View Challenge
                   </Link>
-                ) : null}
+                  {canSubmit ? (
+                    <Link
+                      href={`/candidate/submit/${challenge.id}`}
+                      className="block rounded-xl px-3 py-2 font-semibold text-white/76 transition hover:bg-white/8 hover:text-white"
+                    >
+                      Submit Solution
+                    </Link>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpenId(null);
+                      setRemoveError(null);
+                      setChallengeToRemove(challenge);
+                    }}
+                    className="block w-full rounded-xl px-3 py-2 text-left font-semibold text-[#ffd3ca] transition hover:bg-[#8a2d1f]/24 hover:text-[#ffe8e2] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+                  >
+                    Remove Challenge
+                  </button>
+                </div>
+              ) : null}
+              <p className="mt-3 text-sm leading-6 text-white/62">{challenge.challengeTitle}</p>
+              <div className="mt-4 flex items-center gap-2 text-xs text-white/52">
+                <CalendarClock className="h-4 w-4" />
+                {challenge.deadline ? new Date(challenge.deadline).toLocaleDateString() : "No fixed deadline"}
+              </div>
+              {isRetry && submissionId ? (
                 <button
                   type="button"
-                  onClick={() => {
-                    setMenuOpenId(null);
-                    setRemoveError(null);
-                    setChallengeToRemove(challenge);
-                  }}
-                  className="block w-full rounded-xl px-3 py-2 text-left font-semibold text-[#ffd3ca] transition hover:bg-[#8a2d1f]/24 hover:text-[#ffe8e2] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+                  disabled={retryAnalysis.isPending}
+                  onClick={() => retryAnalysis.mutate(submissionId)}
+                  className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-4 text-sm font-semibold text-[var(--accent-ink)] transition hover:bg-[var(--accent-strong)] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Remove Challenge
+                  {isRetrying ? "Queueing..." : "Retry Analysis"}
+                  <ArrowRight className="h-4 w-4" />
                 </button>
-              </div>
-            ) : null}
-            <p className="mt-3 text-sm leading-6 text-white/62">{challenge.challengeTitle}</p>
-            <div className="mt-4 flex items-center gap-2 text-xs text-white/52">
-              <CalendarClock className="h-4 w-4" />
-              {challenge.deadline ? new Date(challenge.deadline).toLocaleDateString() : "No fixed deadline"}
-            </div>
-            {challenge.challengeStatus !== "submitted" && challenge.challengeStatus !== "matched" ? (
-              <Link
-                href={`/candidate/submit/${challenge.id}`}
-                className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-4 text-sm font-semibold text-[var(--accent-ink)] transition hover:bg-[var(--accent-strong)]"
-              >
-                Submit Solution
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            ) : null}
-          </article>
-        ))}
+              ) : canSubmit ? (
+                <Link
+                  href={`/candidate/submit/${challenge.id}`}
+                  className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-4 text-sm font-semibold text-[var(--accent-ink)] transition hover:bg-[var(--accent-strong)]"
+                >
+                  Submit Solution
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              ) : null}
+              {retryAnalysis.isError && retryAnalysis.variables === submissionId ? (
+                <p className="mt-3 text-sm text-[#ff8b75]">
+                  {retryAnalysis.error instanceof Error ? retryAnalysis.error.message : "Could not retry the analysis."}
+                </p>
+              ) : null}
+            </article>
+          );
+        })}
         {!data?.length ? (
           <div className="rounded-[24px] border border-white/10 bg-white/[0.06] p-6 text-center">
             <h2 className="text-lg font-bold">No accepted challenges yet</h2>

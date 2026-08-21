@@ -7,8 +7,10 @@ export const dynamic = "force-dynamic";
 
 export default async function OpportunitySubmissionsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const opportunity = await hiringService.getOpportunity(id);
-  const opportunitySubmissions = await hiringService.getOpportunitySubmissions(id);
+  const [opportunity, opportunitySubmissions] = await Promise.all([
+    hiringService.getOpportunity(id),
+    hiringService.getOpportunitySubmissions(id),
+  ]);
 
   if (!opportunity) {
     return (
@@ -45,7 +47,13 @@ export default async function OpportunitySubmissionsPage({ params }: { params: P
               {submission.githubUrl.replace("https://github.com/", "")}
             </p>
             <div className="mt-4">
-              <Badge>Project Analysis</Badge>
+              <Badge>
+                {submission.analysis
+                  ? "Analysis ready"
+                  : submission.status === "analysis_failed"
+                    ? "Analysis unavailable"
+                    : "Analysis queued"}
+              </Badge>
             </div>
           </Link>
         ))}

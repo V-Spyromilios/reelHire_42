@@ -37,6 +37,25 @@ export const apiOpportunitySchema = z.object({
   pitch_video_secure_url: z.string().url().nullable().optional(),
 });
 
+const apiProjectEvidenceSchema = z.object({
+  label: z.string(),
+  file: z.string(),
+  lines: z.string(),
+  note: z.string(),
+});
+
+const apiProjectAnalysisSchema = z.object({
+  overall_score: z.number().min(0).max(100),
+  code_quality: z.number().min(0).max(100),
+  architecture: z.number().min(0).max(100),
+  testing: z.number().min(0).max(100),
+  documentation: z.number().min(0).max(100),
+  summary: z.string(),
+  strengths: z.array(z.string()),
+  concerns: z.array(z.string()),
+  evidence: z.array(apiProjectEvidenceSchema),
+});
+
 export const apiSubmissionSchema = z.object({
   id: z.string(),
   candidate: candidateSchema,
@@ -45,7 +64,12 @@ export const apiSubmissionSchema = z.object({
   github_url: z.string().url(),
   explanation_video: apiMediaAssetSchema.nullable().optional(),
   explanation_video_secure_url: z.string().url().nullable().optional(),
-  status: z.enum(["draft", "submitted", "analysis_pending", "analysis_complete", "matched", "closed"]),
+  status: z.enum(["draft", "submitted", "analysis_pending", "analysis_complete", "analysis_failed", "matched", "closed"]),
+  analysis: apiProjectAnalysisSchema.nullable().optional(),
+  analysis_error: z.string().nullable().optional(),
+  analysis_model: z.string().nullable().optional(),
+  analysis_commit_sha: z.string().nullable().optional(),
+  analysis_evaluated_at: z.string().nullable().optional(),
   created_at: z.string(),
   updated_at: z.string(),
 });

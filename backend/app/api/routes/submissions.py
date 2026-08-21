@@ -34,6 +34,17 @@ async def get_submission(submission_id: str, service: SubmissionService = Depend
     return await service.get(submission_id)
 
 
+@router.post("/submissions/{submission_id}/analysis/retry", response_model=SubmissionResponse)
+async def retry_submission_analysis(
+    submission_id: str,
+    session: AsyncSession = Depends(get_session),
+    service: SubmissionService = Depends(submission_service),
+) -> SubmissionResponse:
+    response = await service.retry_analysis(submission_id)
+    await session.commit()
+    return response
+
+
 @router.get("/candidate/submissions", response_model=list[SubmissionResponse])
 async def candidate_submissions(service: SubmissionService = Depends(submission_service)) -> list[SubmissionResponse]:
     return await service.list_candidate()

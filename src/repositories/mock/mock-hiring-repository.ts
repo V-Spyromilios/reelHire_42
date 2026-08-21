@@ -115,7 +115,14 @@ export class MockHiringRepository implements HiringRepository {
         );
         return {
           ...opportunity,
-          challengeStatus: match ? "matched" : submission ? "submitted" : "in progress",
+          challengeStatus: match
+            ? "matched"
+            : submission?.status === "analysis_failed"
+              ? "analysis_failed"
+              : submission
+                ? "submitted"
+                : "in progress",
+          submissionId: submission?.id,
         };
       });
   }
@@ -131,6 +138,16 @@ export class MockHiringRepository implements HiringRepository {
       ...input,
     };
     mutableSubmissions.push(submission);
+    return submission;
+  }
+
+  async retrySubmissionAnalysis(submissionId: string) {
+    await wait(120);
+    const submission = mutableSubmissions.find((item) => item.id === submissionId);
+    if (!submission) throw new Error("Submission not found.");
+    submission.status = "analysis_pending";
+    submission.analysis = undefined;
+    submission.analysisError = undefined;
     return submission;
   }
 

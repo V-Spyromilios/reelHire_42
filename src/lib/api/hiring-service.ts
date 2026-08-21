@@ -41,6 +41,10 @@ class HiringService {
     return this.repository.createSubmission(input);
   }
 
+  retrySubmissionAnalysis(submissionId: string) {
+    return this.repository.retrySubmissionAnalysis(submissionId);
+  }
+
   getEmployerOpportunities() {
     return this.repository.getEmployerOpportunities(currentEmployerId);
   }

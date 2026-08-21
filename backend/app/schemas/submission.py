@@ -4,6 +4,7 @@ from enum import StrEnum
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
 
 from app.schemas.media import MediaAsset, MediaAssetResponse
+from app.services.github_repository import parse_github_repository_url
 
 
 class SubmissionStatus(StrEnum):
@@ -11,6 +12,7 @@ class SubmissionStatus(StrEnum):
     submitted = "submitted"
     analysis_pending = "analysis_pending"
     analysis_complete = "analysis_complete"
+    analysis_failed = "analysis_failed"
     matched = "matched"
     closed = "closed"
 
@@ -35,12 +37,31 @@ class CreateSubmissionRequest(BaseModel):
     @field_validator("github_url")
     @classmethod
     def validate_github_repo(cls, value: HttpUrl) -> HttpUrl:
-        if value.host not in {"github.com", "www.github.com"}:
-            raise ValueError("Repository must be hosted on GitHub.")
-        parts = [part for part in value.path.split("/") if part]
-        if len(parts) < 2:
-            raise ValueError("Enter a public GitHub repository URL.")
+        parse_github_repository_url(str(value))
         return value
+
+
+class ProjectEvidenceResponse(BaseModel):
+    label: str = Field(min_length=1, max_length=80)
+    file: str = Field(min_length=1, max_length=500)
+    lines: str = Field(min_length=1, max_length=80)
+    note: str = Field(min_length=1, max_length=600)
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class ProjectAnalysisResponse(BaseModel):
+    overall_score: int = Field(ge=0, le=100)
+    code_quality: int = Field(ge=0, le=100)
+    architecture: int = Field(ge=0, le=100)
+    testing: int = Field(ge=0, le=100)
+    documentation: int = Field(ge=0, le=100)
+    summary: str = Field(min_length=1, max_length=1_200)
+    strengths: list[str] = Field(max_length=5)
+    concerns: list[str] = Field(max_length=5)
+    evidence: list[ProjectEvidenceResponse] = Field(max_length=6)
+
+    model_config = ConfigDict(extra="forbid")
 
 
 class SubmissionResponse(BaseModel):
@@ -52,5 +73,10 @@ class SubmissionResponse(BaseModel):
     explanation_video: MediaAssetResponse | None = None
     explanation_video_secure_url: str | None = None
     status: SubmissionStatus
+    analysis: ProjectAnalysisResponse | None = None
+    analysis_error: str | None = None
+    analysis_model: str | None = None
+    analysis_commit_sha: str | None = None
+    analysis_evaluated_at: datetime | None = None
     created_at: datetime
     updated_at: datetime

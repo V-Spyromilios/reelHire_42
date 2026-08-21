@@ -23,6 +23,17 @@ export function useCreateSubmission() {
   });
 }
 
+export function useRetrySubmissionAnalysis() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (submissionId: string) => hiringService.retrySubmissionAnalysis(submissionId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["candidate", "challenges"] });
+      void queryClient.invalidateQueries({ queryKey: ["employer", "opportunities"] });
+    },
+  });
+}
+
 export function useRemoveCandidateChallenge() {
   const queryClient = useQueryClient();
   return useMutation({
