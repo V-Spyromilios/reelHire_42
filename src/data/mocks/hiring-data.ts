@@ -427,7 +427,7 @@ export const submissions: Submission[] = [
   {
     id: "sub-kassenbericht",
     candidate: candidates[2],
-    opportunityId: "opp-data-orbit",
+    opportunityId: "opp-backend-nova",
     githubUrl: "https://github.com/FREYHOFER/KassenberichtOCR",
     explanationVideoUrl: "https://videos.pexels.com/video-files/3191572/3191572-uhd_2560_1440_25fps.mp4",
     submittedAt: "2026-08-20T09:10:00.000Z",
