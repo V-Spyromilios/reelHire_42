@@ -1,4 +1,6 @@
-from sqlalchemy import select
+import uuid
+
+from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -42,10 +44,11 @@ class SubmissionRepository:
         return len(list(result))
 
     async def upsert(self, submission: Submission) -> Submission:
+        submission_id = submission.id or f"sub-{uuid.uuid4().hex[:12]}"
         statement = (
             insert(Submission)
             .values(
-                id=submission.id,
+                id=submission_id,
                 candidate_id=submission.candidate_id,
                 opportunity_id=submission.opportunity_id,
                 github_url=submission.github_url,
@@ -78,3 +81,8 @@ class SubmissionRepository:
         )
         result = await self.session.scalars(statement)
         return result.one()
+
+    async def set_status(self, submission_id: str, status: str) -> Submission | None:
+        statement = update(Submission).where(Submission.id == submission_id).values(status=status).returning(Submission)
+        result = await self.session.scalars(statement)
+        return result.first()

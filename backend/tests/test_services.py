@@ -5,12 +5,16 @@ from fastapi import HTTPException
 from sqlalchemy.dialects import postgresql
 
 from app.dependencies.identity import CandidateIdentity, EmployerIdentity
+from app.models.match import EmployerReaction, Match
 from app.models.opportunity import CandidateReaction, Opportunity
+from app.models.submission import Submission
 from app.repositories.opportunity_repository import OpportunityRepository
+from app.schemas.reaction import EmployerReactionRequest
 from app.schemas.media import MediaAsset
 from app.schemas.opportunity import CreateOpportunityRequest
 from app.schemas.reaction import CandidateReactionRequest
 from app.schemas.submission import CreateSubmissionRequest
+from app.services.match_service import MatchService
 from app.services.opportunity_service import OpportunityService
 from app.services.submission_service import SubmissionService
 
@@ -84,6 +88,15 @@ class FakeOpportunityRepository:
             return [self.reaction]
         return []
 
+    async def has_active_accepted_reaction(self, candidate_id: str, opportunity_id: str):
+        return bool(
+            self.reaction
+            and self.reaction.candidate_id == candidate_id
+            and self.reaction.opportunity_id == opportunity_id
+            and self.reaction.reaction == "accepted"
+            and self.reaction.withdrawn_at is None
+        )
+
     async def withdraw_candidate_reaction(self, candidate_id: str, opportunity_id: str, withdrawn_at: datetime):
         if (
             self.reaction
@@ -109,6 +122,9 @@ class FakeSubmissionRepository:
         self.item = None
         self.opportunity_submission_count = 0
 
+    async def get(self, submission_id: str):
+        return self.item if self.item and self.item.id == submission_id else None
+
     async def get_for_candidate_opportunity(self, candidate_id: str, opportunity_id: str):
         return self.item
 
@@ -124,6 +140,67 @@ class FakeSubmissionRepository:
         submission.updated_at = datetime.now(UTC)
         self.item = submission
         return submission
+
+    async def set_status(self, submission_id: str, status: str):
+        if self.item and self.item.id == submission_id:
+            self.item.status = status
+            return self.item
+        return None
+
+
+class FakeMatchRepository:
+    def __init__(self) -> None:
+        self.reaction = None
+        self.match = None
+
+    async def get_employer_reaction(self, employer_id: str, submission_id: str):
+        if self.reaction and self.reaction.employer_id == employer_id and self.reaction.submission_id == submission_id:
+            return self.reaction
+        return None
+
+    async def get_employer_reaction_for_submission(self, submission_id: str):
+        return self.reaction if self.reaction and self.reaction.submission_id == submission_id else None
+
+    async def upsert_employer_reaction(self, reaction):
+        if self.reaction:
+            self.reaction.reaction = reaction.reaction
+            self.reaction.updated_at = reaction.updated_at
+        else:
+            reaction.id = "er-test"
+            self.reaction = reaction
+        return self.reaction
+
+    async def get_match(self, match_id: str):
+        return self.match if self.match and self.match.id == match_id else None
+
+    async def get_match_by_submission(self, submission_id: str):
+        return self.match if self.match and self.match.submission_id == submission_id else None
+
+    async def get_or_create_match(self, *, opportunity_id, submission_id, candidate_id, employer_id, created_at):
+        if self.match:
+            return self.match
+        self.match = Match(
+            id="match-test",
+            opportunity_id=opportunity_id,
+            submission_id=submission_id,
+            candidate_id=candidate_id,
+            employer_id=employer_id,
+            created_at=created_at,
+            status="matched",
+        )
+        return self.match
+
+    async def list_for_employer(self, employer_id: str):
+        return [self.match] if self.match and self.match.employer_id == employer_id else []
+
+    async def list_for_candidate(self, candidate_id: str):
+        return [self.match] if self.match and self.match.candidate_id == candidate_id else []
+
+    async def request_interview(self, match_id: str):
+        if self.match and self.match.id == match_id:
+            self.match.status = "interview_requested"
+            return self.match
+        return None
 
 
 class FakeCloudinaryService:
@@ -186,6 +263,28 @@ def stored_opportunity(
         created_at=datetime.now(UTC),
         pitch_video_public_id=pitch_video_public_id,
         pitch_video_secure_url="https://res.cloudinary.com/demo/video/upload/delete-me.mp4",
+    )
+
+
+def stored_submission(
+    *,
+    submission_id: str = "sub-test",
+    opportunity_id: str = "opp-test",
+    candidate_id: str = "cand-alex",
+    status: str = "submitted",
+) -> Submission:
+    return Submission(
+        id=submission_id,
+        candidate_id=candidate_id,
+        opportunity_id=opportunity_id,
+        github_url="https://github.com/alexmorgan-dev/incident-queue",
+        explanation_video_public_id="reelhire/submissions/review-me",
+        explanation_video_secure_url="https://res.cloudinary.com/demo/video/upload/review-me.mp4",
+        explanation_video_format="mp4",
+        explanation_video_bytes=4096,
+        status=status,
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
 
 
@@ -507,3 +606,126 @@ async def test_delete_opportunity_allows_database_deletion_when_media_is_already
     await service.delete("opp-delete")
 
     assert opportunities.deleted is True
+
+
+def review_service_with_active_submission():
+    opportunities = FakeOpportunityRepository()
+    opportunities.item = stored_opportunity(opportunity_id="opp-test")
+    opportunities.reaction = CandidateReaction(
+        id="cr-test",
+        candidate_id="cand-alex",
+        opportunity_id="opp-test",
+        reaction="accepted",
+        watch_time_ms=1200,
+        video_duration_ms=24000,
+        reacted_at=datetime.now(UTC),
+    )
+    submissions = FakeSubmissionRepository()
+    submissions.item = stored_submission()
+    matches = FakeMatchRepository()
+    service = MatchService(matches, submissions, opportunities, EmployerIdentity(), CandidateIdentity())
+    return service, opportunities, submissions, matches
+
+
+@pytest.mark.asyncio
+async def test_employer_accepts_valid_submission_and_creates_match_once() -> None:
+    service, _opportunities, submissions, matches = review_service_with_active_submission()
+
+    first = await service.react_to_submission("sub-test", EmployerReactionRequest(reaction="accepted"))
+    second = await service.react_to_submission("sub-test", EmployerReactionRequest(reaction="accepted"))
+
+    assert first.reaction.reaction == "accepted"
+    assert first.match is not None
+    assert second.match is not None
+    assert first.match.id == second.match.id
+    assert submissions.item.status == "matched"
+    assert matches.match.id == "match-test"
+
+
+@pytest.mark.asyncio
+async def test_employer_passes_valid_submission_without_match() -> None:
+    service, _opportunities, _submissions, matches = review_service_with_active_submission()
+
+    response = await service.react_to_submission("sub-test", EmployerReactionRequest(reaction="passed"))
+
+    assert response.reaction.reaction == "passed"
+    assert response.match is None
+    assert matches.match is None
+
+
+@pytest.mark.asyncio
+async def test_pass_then_accept_updates_reaction_and_creates_match() -> None:
+    service, _opportunities, _submissions, matches = review_service_with_active_submission()
+
+    await service.react_to_submission("sub-test", EmployerReactionRequest(reaction="passed"))
+    response = await service.react_to_submission("sub-test", EmployerReactionRequest(reaction="accepted"))
+
+    assert response.reaction.reaction == "accepted"
+    assert response.match is not None
+    assert matches.match is not None
+
+
+@pytest.mark.asyncio
+async def test_accept_then_pass_after_match_is_blocked() -> None:
+    service, _opportunities, _submissions, _matches = review_service_with_active_submission()
+
+    await service.react_to_submission("sub-test", EmployerReactionRequest(reaction="accepted"))
+
+    with pytest.raises(HTTPException) as exc_info:
+        await service.react_to_submission("sub-test", EmployerReactionRequest(reaction="passed"))
+
+    assert exc_info.value.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_employer_accept_rejects_withdrawn_candidate() -> None:
+    service, opportunities, _submissions, _matches = review_service_with_active_submission()
+    opportunities.reaction.withdrawn_at = datetime.now(UTC)
+
+    with pytest.raises(HTTPException) as exc_info:
+        await service.react_to_submission("sub-test", EmployerReactionRequest(reaction="accepted"))
+
+    assert exc_info.value.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_employer_reaction_rejects_wrong_employer() -> None:
+    service, opportunities, _submissions, _matches = review_service_with_active_submission()
+    opportunities.item.employer_id = "emp-other"
+
+    with pytest.raises(HTTPException) as exc_info:
+        await service.react_to_submission("sub-test", EmployerReactionRequest(reaction="accepted"))
+
+    assert exc_info.value.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_missing_submission_reaction_returns_404() -> None:
+    service, _opportunities, _submissions, _matches = review_service_with_active_submission()
+
+    with pytest.raises(HTTPException) as exc_info:
+        await service.react_to_submission("missing", EmployerReactionRequest(reaction="accepted"))
+
+    assert exc_info.value.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_candidate_and_employer_match_lists_return_persisted_matches() -> None:
+    service, _opportunities, _submissions, _matches = review_service_with_active_submission()
+    await service.react_to_submission("sub-test", EmployerReactionRequest(reaction="accepted"))
+
+    employer_matches = await service.list_employer_matches()
+    candidate_matches = await service.list_candidate_matches()
+
+    assert [item.id for item in employer_matches] == ["match-test"]
+    assert [item.id for item in candidate_matches] == ["match-test"]
+
+
+@pytest.mark.asyncio
+async def test_request_interview_updates_match_status() -> None:
+    service, _opportunities, _submissions, _matches = review_service_with_active_submission()
+    await service.react_to_submission("sub-test", EmployerReactionRequest(reaction="accepted"))
+
+    response = await service.request_interview("match-test")
+
+    assert response.status == "interview_requested"

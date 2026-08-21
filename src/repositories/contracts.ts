@@ -59,6 +59,7 @@ export interface HiringRepository {
   getOpportunitySubmissions(opportunityId: string): Promise<Submission[]>;
   getSubmission(id: string): Promise<Submission | null>;
   createEmployerReaction(input: CreateEmployerReactionInput): Promise<{ reaction: EmployerReaction; match: Match | null }>;
-  getMatches(): Promise<Match[]>;
+  getEmployerMatches(): Promise<Match[]>;
+  getCandidateMatches(): Promise<Match[]>;
   requestInterview(matchId: string): Promise<Match>;
 }

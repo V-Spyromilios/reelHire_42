@@ -25,3 +25,21 @@ class CandidateReactionResponse(BaseModel):
     watchTimeMs: int
     videoDurationMs: int
     reactedAt: datetime
+
+
+class EmployerReactionKind(StrEnum):
+    accepted = "accepted"
+    passed = "passed"
+
+
+class EmployerReactionRequest(BaseModel):
+    reaction: EmployerReactionKind
+
+
+class EmployerReactionResponse(BaseModel):
+    id: str
+    employerId: str
+    submissionId: str
+    reaction: EmployerReactionKind
+    reactedAt: datetime
+    updatedAt: datetime

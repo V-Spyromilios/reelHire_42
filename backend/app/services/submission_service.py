@@ -1,10 +1,13 @@
 from fastapi import HTTPException, status
 
-from app.dependencies.identity import CandidateIdentity
+from app.dependencies.identity import CandidateIdentity, EmployerIdentity
+from app.models.match import EmployerReaction, Match
 from app.models.submission import Submission
+from app.repositories.match_repository import MatchRepository
 from app.repositories.opportunity_repository import OpportunityRepository
 from app.repositories.submission_repository import SubmissionRepository
 from app.schemas.media import MediaAssetResponse
+from app.schemas.reaction import EmployerReactionResponse
 from app.schemas.submission import CandidateResponse, CreateSubmissionRequest, SubmissionResponse
 
 
@@ -36,7 +39,25 @@ def media_from_submission(submission: Submission) -> MediaAssetResponse | None:
     )
 
 
-def submission_response(submission: Submission, candidate: CandidateIdentity) -> SubmissionResponse:
+def employer_reaction_response(reaction: EmployerReaction | None) -> EmployerReactionResponse | None:
+    if reaction is None:
+        return None
+    return EmployerReactionResponse(
+        id=reaction.id,
+        employerId=reaction.employer_id,
+        submissionId=reaction.submission_id,
+        reaction=reaction.reaction,
+        reactedAt=reaction.reacted_at,
+        updatedAt=reaction.updated_at,
+    )
+
+
+def submission_response(
+    submission: Submission,
+    candidate: CandidateIdentity,
+    employer_reaction: EmployerReaction | None = None,
+    match: Match | None = None,
+) -> SubmissionResponse:
     return SubmissionResponse(
         id=submission.id,
         candidate=candidate_response(candidate),
@@ -48,6 +69,9 @@ def submission_response(submission: Submission, candidate: CandidateIdentity) ->
         status=submission.status,
         created_at=submission.created_at,
         updated_at=submission.updated_at,
+        employer_reaction=employer_reaction_response(employer_reaction),
+        match_id=match.id if match else None,
+        match_status=match.status if match else None,
     )
 
 
@@ -57,10 +81,14 @@ class SubmissionService:
         repository: SubmissionRepository,
         opportunity_repository: OpportunityRepository,
         candidate: CandidateIdentity,
+        employer: EmployerIdentity | None = None,
+        match_repository: MatchRepository | None = None,
     ):
         self.repository = repository
         self.opportunity_repository = opportunity_repository
         self.candidate = candidate
+        self.employer = employer
+        self.match_repository = match_repository
 
     async def create(self, payload: CreateSubmissionRequest) -> SubmissionResponse:
         if not await self.opportunity_repository.get(payload.opportunity_id):
@@ -90,8 +118,37 @@ class SubmissionService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Submission not found.")
         return submission_response(submission, self.candidate)
 
+    async def get_employer_submission(self, submission_id: str) -> SubmissionResponse:
+        submission = await self.repository.get(submission_id)
+        if not submission:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Submission not found.")
+        await self._verify_employer_opportunity(submission.opportunity_id)
+        reaction, match = await self._review_metadata(submission.id)
+        return submission_response(submission, self.candidate, reaction, match)
+
     async def list_candidate(self) -> list[SubmissionResponse]:
         return [submission_response(item, self.candidate) for item in await self.repository.list_for_candidate(self.candidate.id)]
 
     async def list_opportunity(self, opportunity_id: str) -> list[SubmissionResponse]:
-        return [submission_response(item, self.candidate) for item in await self.repository.list_for_opportunity(opportunity_id)]
+        await self._verify_employer_opportunity(opportunity_id)
+        responses: list[SubmissionResponse] = []
+        for item in await self.repository.list_for_opportunity(opportunity_id):
+            reaction, match = await self._review_metadata(item.id)
+            responses.append(submission_response(item, self.candidate, reaction, match))
+        return responses
+
+    async def _verify_employer_opportunity(self, opportunity_id: str) -> None:
+        if self.employer is None:
+            return
+        opportunity = await self.opportunity_repository.get(opportunity_id)
+        if not opportunity:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Opportunity not found.")
+        if opportunity.employer_id != self.employer.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You don't have permission to review this opportunity.")
+
+    async def _review_metadata(self, submission_id: str) -> tuple[EmployerReaction | None, Match | None]:
+        if self.match_repository is None:
+            return None, None
+        reaction = await self.match_repository.get_employer_reaction_for_submission(submission_id)
+        match = await self.match_repository.get_match_by_submission(submission_id)
+        return reaction, match

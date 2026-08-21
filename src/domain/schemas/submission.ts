@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { candidateSchema } from "./candidate";
 import { mediaAssetSchema } from "./media";
+import { employerReactionSchema } from "./reactions";
 
 export const projectEvidenceSchema = z.object({
   label: z.string(),
@@ -31,6 +32,9 @@ export const submissionSchema = z.object({
   submittedAt: z.string().datetime(),
   status: z.enum(["draft", "submitted", "analysis_pending", "analysis_complete", "reviewed", "matched", "passed", "closed"]),
   analysis: projectAnalysisSchema.optional(),
+  employerReaction: employerReactionSchema.optional(),
+  matchId: z.string().optional(),
+  matchStatus: z.enum(["matched", "interview_requested", "interview_scheduled", "closed"]).optional(),
 });
 
 export type ProjectEvidence = z.infer<typeof projectEvidenceSchema>;

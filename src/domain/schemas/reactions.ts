@@ -16,6 +16,7 @@ export const employerReactionSchema = z.object({
   submissionId: z.string(),
   reaction: z.enum(["accepted", "passed"]),
   reactedAt: z.string().datetime(),
+  updatedAt: z.string().datetime().optional(),
 });
 
 export type CandidateReaction = z.infer<typeof candidateReactionSchema>;

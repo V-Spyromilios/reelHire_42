@@ -45,7 +45,11 @@ export default async function OpportunitySubmissionsPage({ params }: { params: P
               {submission.githubUrl.replace("https://github.com/", "")}
             </p>
             <div className="mt-4">
-              <Badge>Project Analysis</Badge>
+              <div className="flex flex-wrap gap-2">
+                <Badge>Project Analysis pending</Badge>
+                {submission.employerReaction ? <Badge>{submission.employerReaction.reaction}</Badge> : null}
+                {submission.matchStatus ? <Badge>{submission.matchStatus.replace("_", " ")}</Badge> : null}
+              </div>
             </div>
           </Link>
         ))}

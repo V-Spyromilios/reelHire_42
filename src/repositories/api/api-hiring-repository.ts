@@ -17,12 +17,16 @@ import type {
 } from "@/repositories/contracts";
 import {
   apiCandidateReactionSchema,
+  apiEmployerSubmissionReactionResponseSchema,
+  apiMatchListSchema,
+  apiMatchSchema,
   apiOpportunityAnalyticsSchema,
   apiOpportunityListSchema,
   apiOpportunitySchema,
   apiSubmissionListSchema,
   apiSubmissionSchema,
   mapApiMediaAsset,
+  type ApiMatch,
   type ApiOpportunity,
   type ApiSubmission,
 } from "./api-schemas";
@@ -58,6 +62,20 @@ function mapSubmission(item: ApiSubmission): Submission {
     explanationVideoUrl: explanationVideo?.secureUrl ?? item.explanation_video_secure_url ?? "https://videos.pexels.com/video-files/3209298/3209298-uhd_2560_1440_25fps.mp4",
     explanationVideo,
     submittedAt: item.created_at,
+    status: item.status,
+    employerReaction: item.employer_reaction ?? undefined,
+    matchId: item.match_id ?? undefined,
+    matchStatus: item.match_status ?? undefined,
+  };
+}
+
+function mapMatch(item: ApiMatch): Match {
+  return {
+    id: item.id,
+    opportunity: mapOpportunity(item.opportunity),
+    candidate: item.candidate,
+    submissionId: item.submissionId,
+    createdAt: item.createdAt,
     status: item.status,
   };
 }
@@ -186,7 +204,7 @@ export class ApiHiringRepository implements HiringRepository {
 
   async getSubmission(id: string) {
     try {
-      const item = await apiRequest(`/api/submissions/${id}`, apiSubmissionSchema);
+      const item = await apiRequest(`/api/employer/submissions/${id}`, apiSubmissionSchema);
       return mapSubmission(item);
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) return null;
@@ -195,14 +213,34 @@ export class ApiHiringRepository implements HiringRepository {
   }
 
   async createEmployerReaction(input: CreateEmployerReactionInput): Promise<{ reaction: EmployerReaction; match: Match | null }> {
-    throw new Error(`Employer reactions are not implemented in API mode yet for ${input.submissionId}.`);
+    const response = await apiRequest(
+      `/api/employer/submissions/${input.submissionId}/reaction`,
+      apiEmployerSubmissionReactionResponseSchema,
+      {
+        method: "POST",
+        body: JSON.stringify({ reaction: input.reaction }),
+      },
+    );
+    return {
+      reaction: response.reaction,
+      match: response.match ? mapMatch(response.match) : null,
+    };
   }
 
-  async getMatches(): Promise<Match[]> {
-    return [];
+  async getEmployerMatches(): Promise<Match[]> {
+    const items = await apiRequest("/api/employer/matches", apiMatchListSchema);
+    return items.map(mapMatch);
+  }
+
+  async getCandidateMatches(): Promise<Match[]> {
+    const items = await apiRequest("/api/candidate/matches", apiMatchListSchema);
+    return items.map(mapMatch);
   }
 
   async requestInterview(matchId: string): Promise<Match> {
-    throw new Error(`Interview requests are not implemented in API mode yet for ${matchId}.`);
+    const item = await apiRequest(`/api/matches/${matchId}/interview`, apiMatchSchema, {
+      method: "POST",
+    });
+    return mapMatch(item);
   }
 }

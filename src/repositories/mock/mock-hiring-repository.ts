@@ -10,6 +10,7 @@ import {
   candidateReactions,
   candidates,
   currentCandidateId,
+  currentEmployerId,
   employers,
   matches,
   opportunities,
@@ -31,6 +32,7 @@ const mutableCandidateReactions: MutableCandidateReaction[] = [...candidateReact
 const mutableSubmissions: Submission[] = [...submissions];
 const mutableMatches: Match[] = [...matches];
 const mutableOpportunities: Opportunity[] = [...opportunities];
+const mutableEmployerReactions: EmployerReaction[] = [];
 
 export class MockHiringRepository implements HiringRepository {
   async getOpportunitiesFeed() {
@@ -185,11 +187,6 @@ export class MockHiringRepository implements HiringRepository {
 
   async createEmployerReaction(input: CreateEmployerReactionInput) {
     await wait(140);
-    const reaction: EmployerReaction = {
-      id: `er-${crypto.randomUUID()}`,
-      reactedAt: new Date().toISOString(),
-      ...input,
-    };
     const submission = mutableSubmissions.find((item) => item.id === input.submissionId);
     const opportunity = submission
       ? mutableOpportunities.find((item) => item.id === submission.opportunityId)
@@ -199,12 +196,29 @@ export class MockHiringRepository implements HiringRepository {
           (item) =>
             item.candidateId === submission.candidate.id &&
             item.opportunityId === submission.opportunityId &&
-            item.reaction === "accepted",
+            item.reaction === "accepted" &&
+            !item.withdrawnAt,
         )
       : false;
+    const existingMatch = mutableMatches.find((item) => item.submissionId === input.submissionId) ?? null;
+    if (existingMatch && input.reaction === "passed") {
+      throw new Error("This submission has already been matched.");
+    }
 
-    let match: Match | null = null;
-    if (input.reaction === "accepted" && submission && opportunity && candidateAccepted) {
+    const existingReaction = mutableEmployerReactions.find(
+      (item) => item.employerId === input.employerId && item.submissionId === input.submissionId,
+    );
+    const reaction: EmployerReaction = existingReaction ?? {
+      id: `er-${crypto.randomUUID()}`,
+      reactedAt: new Date().toISOString(),
+      ...input,
+    };
+    reaction.reaction = input.reaction;
+    reaction.updatedAt = new Date().toISOString();
+    if (!existingReaction) mutableEmployerReactions.push(reaction);
+
+    let match: Match | null = existingMatch;
+    if (input.reaction === "accepted" && submission && opportunity && candidateAccepted && !match) {
       match = {
         id: `match-${crypto.randomUUID()}`,
         opportunity,
@@ -213,15 +227,21 @@ export class MockHiringRepository implements HiringRepository {
         createdAt: new Date().toISOString(),
         status: "matched",
       };
+      submission.status = "matched";
       mutableMatches.unshift(match);
     }
 
     return { reaction, match };
   }
 
-  async getMatches() {
+  async getEmployerMatches() {
     await wait();
-    return mutableMatches;
+    return mutableMatches.filter((match) => match.opportunity.employer.id === currentEmployerId);
+  }
+
+  async getCandidateMatches() {
+    await wait();
+    return mutableMatches.filter((match) => match.candidate.id === currentCandidateId);
   }
 
   async requestInterview(matchId: string) {

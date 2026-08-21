@@ -73,8 +73,16 @@ class HiringService {
     });
   }
 
+  getEmployerMatches() {
+    return this.repository.getEmployerMatches();
+  }
+
+  getCandidateMatches() {
+    return this.repository.getCandidateMatches();
+  }
+
   getMatches() {
-    return this.repository.getMatches();
+    return this.getEmployerMatches();
   }
 
   requestInterview(matchId: string) {

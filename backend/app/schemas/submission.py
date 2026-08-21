@@ -4,6 +4,7 @@ from enum import StrEnum
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
 
 from app.schemas.media import MediaAsset, MediaAssetResponse
+from app.schemas.reaction import EmployerReactionResponse
 
 
 class SubmissionStatus(StrEnum):
@@ -54,3 +55,6 @@ class SubmissionResponse(BaseModel):
     status: SubmissionStatus
     created_at: datetime
     updated_at: datetime
+    employer_reaction: EmployerReactionResponse | None = None
+    match_id: str | None = None
+    match_status: str | None = None
